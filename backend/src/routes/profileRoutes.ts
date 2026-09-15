@@ -1,20 +1,29 @@
-import express from "express";
+import express, { Request, Response, NextFunction } from "express";
 import { Profile } from "../models/Profile";
 import { auth } from "../config/auth";
 
 const router = express.Router();
 
+// Define a strict type for requests that contain a user
+export interface AuthRequest extends Request {
+  user?: {
+    id: string;
+    [key: string]: any;
+  };
+}
+
 // Middleware to protect routes and inject session user
-const requireAuth = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+const requireAuth = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const session = await auth.api.getSession({
       headers: req.headers as any,
     });
     if (!session || !session.user) {
-      return res.status(401).json({ message: "Unauthorized" });
+      res.status(401).json({ message: "Unauthorized" });
+      return;
     }
-    // Attach user to request
-    (req as any).user = session.user;
+    // Attach user to request securely
+    req.user = session.user;
     next();
   } catch (error) {
     console.error("Auth middleware error:", error);
@@ -23,9 +32,14 @@ const requireAuth = async (req: express.Request, res: express.Response, next: ex
 };
 
 // GET /api/profile
-// Fetches the current user's profile draft, or creates a blank one if it doesn't exist
-router.get("/", requireAuth, async (req, res) => {
-  const userId = (req as any).user.id;
+router.get("/", requireAuth as any, async (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id;
+  
+  if (!userId) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
+
   try {
     let profile = await Profile.findOne({ userId });
     
@@ -41,9 +55,14 @@ router.get("/", requireAuth, async (req, res) => {
 });
 
 // PATCH /api/profile
-// Updates the profile with new data (auto-saves drafts on every step)
-router.patch("/", requireAuth, async (req, res) => {
-  const userId = (req as any).user.id;
+router.patch("/", requireAuth as any, async (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id;
+  
+  if (!userId) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
+
   try {
     const updatedData = req.body;
     

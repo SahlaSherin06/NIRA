@@ -19,7 +19,7 @@ export interface IProfile extends Document {
   country: string;
   
   // Step 4: Photos
-  photos: string[]; // Array of image URLs
+  photos: string[]; 
   
   // Step 5: About You
   bio: string;
@@ -109,4 +109,4 @@ const ProfileSchema: Schema = new Schema(
   { timestamps: true }
 );
 
-export const Profile = mongoose.models.Profile || mongoose.model<IProfile>("Profile", ProfileSchema);
+export const Profile = (mongoose.models.Profile as mongoose.Model<IProfile>) || mongoose.model<IProfile>("Profile", ProfileSchema);

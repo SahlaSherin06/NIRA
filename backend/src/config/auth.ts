@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth";
 import { MongoClient } from "mongodb";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
+import { jwt } from "better-auth/plugins";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -14,6 +15,9 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
+  plugins: [
+    jwt() // Enables JWT capabilities within Better Auth
+  ],
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:5000",
   trustedOrigins: ["http://localhost:3000", "http://127.0.0.1:3000"],
 });

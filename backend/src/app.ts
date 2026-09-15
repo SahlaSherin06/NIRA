@@ -33,7 +33,7 @@ connectDB();
 app.use("/api/profile", profileRoutes);
 
 // Mount Better Auth node handler with error catching
-app.all(["/api/auth", "/api/auth/*path"], async (req, res, next) => {
+app.use("/api/auth", async (req, res, next) => {
   try {
     const handler = toNodeHandler(auth);
     await handler(req, res);
