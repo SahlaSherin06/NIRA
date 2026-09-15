@@ -13,8 +13,8 @@ const registerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
-  agree: z.literal(true, {
-    errorMap: () => ({ message: "You must agree to the terms" }),
+  agree: z.boolean().refine((val) => val === true, {
+    message: "You must agree to the terms",
   }),
 });
 
@@ -68,8 +68,8 @@ export default function RegisterPage() {
         return;
       }
 
-      // If successful, redirect to home
-      router.push("/home");
+      // If successful, redirect to onboarding flow to build profile
+      router.push("/onboarding");
       
     } catch (err: any) {
       setError("Unable to connect to the server. Please ensure the backend is running.");
@@ -82,8 +82,10 @@ export default function RegisterPage() {
   const genderOptions = ["Male", "Female", "Other"];
 
   return (
-    <div className="bg-white p-8 sm:p-10 rounded-3xl shadow-xl shadow-brand-900/5">
-      <div className="text-center mb-8">
+    <div data-reveal="up" className="bg-white p-8 md:p-10 rounded-[2rem] shadow-xl shadow-brand-900/5 relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-full h-2 bg-brand-900"></div>
+      
+      <div className="text-center mb-8" data-reveal="fade">
         <h1 className="text-brand-900 font-serif font-bold text-lg mb-2">NIRA</h1>
         <h2 className="text-2xl font-serif text-gray-900 mb-2">Begin Your Journey</h2>
         <p className="text-sm text-gray-600 max-w-[280px] mx-auto">
@@ -97,7 +99,7 @@ export default function RegisterPage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" data-reveal-group>
         
         {/* Profile Created For */}
         <div className="space-y-3">
@@ -154,21 +156,13 @@ export default function RegisterPage() {
 
         {/* Email Address */}
         <div className="space-y-1.5">
-          <label className="block text-sm text-gray-800">Email Address or Phone Number</label>
-          <div className="flex space-x-2">
-            <div className="flex items-center justify-between px-3 py-3.5 bg-[#F9F7F6] rounded-xl text-sm text-gray-700 w-20 cursor-not-allowed opacity-80">
-              <span>+1</span>
-              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-            </div>
-            <div className="flex-1 relative">
-              <input
-                {...register("email")}
-                type="email"
-                className="w-full px-4 py-3.5 bg-[#F9F7F6] border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-900/20 transition-all placeholder:text-gray-400 text-sm"
-                placeholder="name@example.com"
-              />
-            </div>
-          </div>
+          <label className="block text-sm text-gray-800">Email Address</label>
+          <input
+            {...register("email")}
+            type="email"
+            className="w-full px-4 py-3.5 bg-[#F9F7F6] border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-900/20 transition-all placeholder:text-gray-400 text-sm"
+            placeholder="name@example.com"
+          />
           {errors.email && <p className="text-xs text-red-600 ml-1">{errors.email.message}</p>}
         </div>
 
@@ -226,36 +220,7 @@ export default function RegisterPage() {
         </div>
       </form>
 
-      <div className="mt-8">
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-100"></div>
-          </div>
-          <div className="relative flex justify-center text-xs">
-            <span className="px-3 bg-white text-gray-500">Or sign up with</span>
-          </div>
-        </div>
-
-        <div className="mt-6 grid grid-cols-2 gap-4">
-          <button
-            type="button"
-            className="w-full flex items-center justify-center px-4 py-3 border border-gray-200 rounded-xl bg-white text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-          >
-            <Globe className="w-4 h-4 mr-2 text-gray-600" />
-            Google
-          </button>
-          
-          <button
-            type="button"
-            className="w-full flex items-center justify-center px-4 py-3 border border-gray-200 rounded-xl bg-white text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-          >
-            <Smartphone className="w-4 h-4 mr-2 text-gray-600" />
-            Apple
-          </button>
-        </div>
-      </div>
-
-      <div className="mt-10 text-center text-xs text-gray-600">
+      <div className="mt-10 text-center text-xs text-gray-600" data-reveal="fade">
         Already have an account?{" "}
         <Link href="/login" className="font-medium text-brand-900 hover:underline">
           Log In

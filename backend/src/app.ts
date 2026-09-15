@@ -9,6 +9,7 @@ dotenv.config();
 // so environment variables are populated.
 import { connectDB } from "./config/db";
 import { auth } from "./config/auth";
+import profileRoutes from "./routes/profileRoutes";
 
 const app = express();
 
@@ -27,6 +28,9 @@ app.use(express.json());
 
 // Connect to MongoDB
 connectDB();
+
+// Mount API Routes
+app.use("/api/profile", profileRoutes);
 
 // Mount Better Auth node handler with error catching
 app.all(["/api/auth", "/api/auth/*path"], async (req, res, next) => {

@@ -23,6 +23,13 @@ export default function LandingPage() {
   const [activeSection, setActiveSection] = useState("");
 
   useEffect(() => {
+    // Clear any lingering URL hashes (like #why-nira) from previous clicks
+    // so the page always starts clean
+    if (window.location.hash) {
+      window.history.replaceState(null, '', window.location.pathname);
+      window.scrollTo(0, 0);
+    }
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -31,7 +38,7 @@ export default function LandingPage() {
           }
         });
       },
-      { rootMargin: "-20% 0px -80% 0px" } // Triggers when section is in top 20% of screen
+      { rootMargin: "-20% 0px -80% 0px" } 
     );
 
     const sections = document.querySelectorAll("section[id]");
@@ -44,16 +51,10 @@ export default function LandingPage() {
     e.preventDefault();
     const element = document.getElementById(id);
     if (element) {
-      const offset = 80; // height of sticky nav
-      const bodyRect = document.body.getBoundingClientRect().top;
-      const elementRect = element.getBoundingClientRect().top;
-      const elementPosition = elementRect - bodyRect;
-      const offsetPosition = elementPosition - offset;
-
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: "smooth"
-      });
+      // Calculate exact position, subtract 80px for the sticky navbar height
+      const y = element.getBoundingClientRect().top + window.scrollY - 80;
+      window.scrollTo({ top: y, behavior: "smooth" });
+      setActiveSection(id);
     }
   };
 
@@ -109,26 +110,27 @@ export default function LandingPage() {
 
       {/* Padding to account for fixed navbar */}
       <div className="pt-20">
+        
         {/* ===== HERO SECTION ===== */}
         <section id="hero" className="px-8 pt-12 pb-24 max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-8">
-            <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-brand-50 border border-brand-100 text-brand-900 text-sm font-medium">
+            <div data-reveal="up" className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-brand-50 border border-brand-100 text-brand-900 text-sm font-medium">
               <Sparkles className="w-4 h-4" />
               <span>Intentionally designed for meaningful matrimony</span>
             </div>
             
-            <h1 className="text-5xl md:text-6xl font-serif text-brand-900 leading-[1.1]">
+            <h1 data-reveal="up" className="text-5xl md:text-6xl font-serif text-brand-900 leading-[1.1]">
               Meet Someone Who <br/>
               <span className="italic text-brand-800 font-light">Shares Your Future</span>
             </h1>
             
-            <p className="text-lg text-gray-600 max-w-md leading-relaxed">
+            <p data-reveal="up" className="text-lg text-gray-600 max-w-md leading-relaxed">
               A modern, purpose-driven matrimony platform designed to connect you with 
               individuals seeking authentic, serious, and lasting relationships based on shared values.
             </p>
 
-            <div className="flex items-center space-x-4 pt-4">
-              <Link href="/register" className="px-8 py-3.5 rounded-full bg-brand-900 text-white font-medium hover:bg-brand-800 transition shadow-lg shadow-brand-900/20">
+            <div data-reveal="fade" className="flex items-center space-x-4 pt-4">
+              <Link href="/register" className="px-8 py-3.5 rounded-full bg-brand-900 text-white font-medium hover:bg-brand-800 transition shadow-lg shadow-brand-900/20 hover:-translate-y-1 transform">
                 Create Profile
               </Link>
               <a href="#how-it-works" onClick={(e) => scrollTo(e, 'how-it-works')} className="px-8 py-3.5 rounded-full bg-white border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition">
@@ -136,7 +138,7 @@ export default function LandingPage() {
               </a>
             </div>
 
-            <div className="pt-8 flex items-center space-x-4">
+            <div data-reveal="fade" className="pt-8 flex items-center space-x-4">
               <div className="flex -space-x-3">
                 {[
                   "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&q=80&w=100&h=100",
@@ -155,11 +157,11 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="relative">
+          <div className="relative" data-reveal="scale">
             <div className="aspect-[4/5] rounded-[2rem] overflow-hidden shadow-2xl relative">
               <img 
-                src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=800" 
-                alt="Happy Couple" 
+                src="https://i.pinimg.com/736x/12/de/53/12de53b0f03b84a4484a031e65209587.jpg" 
+                alt="Married Couple" 
                 className="w-full h-full object-cover"
               />
               <div className="absolute bottom-6 left-6 right-6 bg-white/90 backdrop-blur-md p-4 rounded-xl shadow-lg border border-white/20">
@@ -175,39 +177,13 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ===== TRUST / PRIVACY SECTION ===== */}
-        <section id="privacy-safety" className="bg-white py-24 border-y border-gray-100 scroll-mt-20">
-          <div className="max-w-7xl mx-auto px-8">
-            <div className="text-center max-w-2xl mx-auto mb-16">
-              <h2 className="text-sm font-bold tracking-widest uppercase text-brand-900 mb-2">Privacy & Safety</h2>
-              <h3 className="text-3xl md:text-4xl font-serif text-gray-900">A secure environment built on trust and respect</h3>
-            </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {[
-                { icon: ShieldCheck, title: "Verified Profiles", desc: "Every single user undergoes rigorous government ID & live photo verification before they can message anyone." },
-                { icon: Lock, title: "Total Privacy Control", desc: "You decide who sees your photos. Keep them blurred publicly and reveal them only to your mutual matches." },
-                { icon: HeartHandshake, title: "Intentional Connections", desc: "Our algorithm actively filters out casual daters, ensuring you only meet those with serious marriage intent." },
-                { icon: MessageCircleHeart, title: "Secure Conversations", desc: "Connect securely through our built-in encrypted messaging system without revealing your phone number." },
-              ].map((item, i) => (
-                <div key={i} className="p-8 rounded-2xl bg-brand-50 border border-brand-100/50 hover:shadow-lg transition duration-300">
-                  <div className="w-12 h-12 rounded-xl bg-brand-100 flex items-center justify-center mb-6 text-brand-900">
-                    <item.icon className="w-6 h-6" />
-                  </div>
-                  <h3 className="font-semibold text-lg text-gray-900 mb-3">{item.title}</h3>
-                  <p className="text-sm text-gray-600 leading-relaxed">{item.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ===== HOW NIRA WORKS ===== */}
+        {/* ===== HOW NIRA WORKS (SWAPPED TO BE BEFORE PRIVACY) ===== */}
         <section id="how-it-works" className="py-24 bg-brand-50/50 scroll-mt-20">
           <div className="max-w-7xl mx-auto px-8 text-center">
-            <h2 className="text-sm font-bold tracking-widest uppercase text-brand-900 mb-2">How It Works</h2>
-            <h3 className="text-3xl md:text-4xl font-serif text-gray-900 mb-16">Four simple steps to your lifelong partnership</h3>
+            <h2 data-reveal="up" className="text-sm font-bold tracking-widest uppercase text-brand-900 mb-2">How It Works</h2>
+            <h3 data-reveal="up" className="text-3xl md:text-4xl font-serif text-gray-900 mb-16">Four simple steps to your lifelong partnership</h3>
             
-            <div className="grid md:grid-cols-4 gap-8 relative">
+            <div className="grid md:grid-cols-4 gap-8 relative" data-reveal-group>
               <div className="hidden md:block absolute top-6 left-[10%] right-[10%] h-0.5 bg-brand-100 -z-10"></div>
               
               {[
@@ -228,16 +204,42 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ===== WHY NIRA IS UNIQUE (NEW SECTION) ===== */}
+        {/* ===== TRUST / PRIVACY SECTION (SWAPPED TO BE AFTER HOW IT WORKS) ===== */}
+        <section id="privacy-safety" className="bg-white py-24 border-y border-gray-100 scroll-mt-20">
+          <div className="max-w-7xl mx-auto px-8">
+            <div className="text-center max-w-2xl mx-auto mb-16">
+              <h2 data-reveal="up" className="text-sm font-bold tracking-widest uppercase text-brand-900 mb-2">Privacy & Safety</h2>
+              <h3 data-reveal="up" className="text-3xl md:text-4xl font-serif text-gray-900">A secure environment built on trust and respect</h3>
+            </div>
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8" data-reveal-group>
+              {[
+                { icon: ShieldCheck, title: "Verified Profiles", desc: "Every single user undergoes rigorous government ID & live photo verification before they can message anyone." },
+                { icon: Lock, title: "Total Privacy Control", desc: "You decide who sees your photos. Keep them blurred publicly and reveal them only to your mutual matches." },
+                { icon: HeartHandshake, title: "Intentional Connections", desc: "Our algorithm actively filters out casual daters, ensuring you only meet those with serious marriage intent." },
+                { icon: MessageCircleHeart, title: "Secure Conversations", desc: "Connect securely through our built-in encrypted messaging system without revealing your phone number." },
+              ].map((item, i) => (
+                <div key={i} className="p-8 rounded-2xl bg-brand-50 border border-brand-100/50 hover:shadow-lg transition duration-300">
+                  <div className="w-12 h-12 rounded-xl bg-brand-100 flex items-center justify-center mb-6 text-brand-900">
+                    <item.icon className="w-6 h-6" />
+                  </div>
+                  <h3 className="font-semibold text-lg text-gray-900 mb-3">{item.title}</h3>
+                  <p className="text-sm text-gray-600 leading-relaxed">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ===== WHY NIRA IS UNIQUE ===== */}
         <section id="why-nira" className="py-24 bg-white scroll-mt-20">
           <div className="max-w-7xl mx-auto px-8">
             <div className="text-center mb-16">
-              <h2 className="text-sm font-bold tracking-widest uppercase text-brand-900 mb-2">The NIRA Difference</h2>
-              <h3 className="text-3xl md:text-4xl font-serif text-gray-900">Why choose NIRA for your search</h3>
-              <p className="mt-4 text-gray-600 max-w-2xl mx-auto">We've stripped away the noise of casual dating apps to build a platform dedicated entirely to serious, long-term commitment.</p>
+              <h2 data-reveal="up" className="text-sm font-bold tracking-widest uppercase text-brand-900 mb-2">The NIRA Difference</h2>
+              <h3 data-reveal="up" className="text-3xl md:text-4xl font-serif text-gray-900">Why choose NIRA for your search</h3>
+              <p data-reveal="up" className="mt-4 text-gray-600 max-w-2xl mx-auto">We've stripped away the noise of casual dating apps to build a platform dedicated entirely to serious, long-term commitment.</p>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid md:grid-cols-2 gap-6" data-reveal-group>
               {[
                 { icon: LineChart, title: "Compatibility-Focused Matching", desc: "We don't just show you people nearby. We analyze core values, religious beliefs, and long-term life goals to suggest truly compatible matches." },
                 { icon: Camera, title: "Rich, Intentional Profiles", desc: "Say goodbye to empty bios. Our extensive onboarding ensures every profile is detailed, giving you deep insights before you ever say hello." },
@@ -258,15 +260,15 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ===== TESTIMONIALS (NEW SECTION) ===== */}
+        {/* ===== TESTIMONIALS ===== */}
         <section id="success-stories" className="py-24 bg-brand-50/30 border-y border-brand-50 scroll-mt-20">
           <div className="max-w-7xl mx-auto px-8">
             <div className="text-center mb-16">
-              <h2 className="text-sm font-bold tracking-widest uppercase text-brand-900 mb-2">Success Stories</h2>
-              <h3 className="text-3xl md:text-4xl font-serif text-gray-900">Hear from couples who found love through NIRA</h3>
+              <h2 data-reveal="up" className="text-sm font-bold tracking-widest uppercase text-brand-900 mb-2">Success Stories</h2>
+              <h3 data-reveal="up" className="text-3xl md:text-4xl font-serif text-gray-900">Hear from couples who found love through NIRA</h3>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-8">
+            <div className="grid md:grid-cols-2 gap-8" data-reveal-group>
               {[
                 { 
                   name: "Layla & Ahmed", 
@@ -306,21 +308,23 @@ export default function LandingPage() {
         {/* ===== BOTTOM CTA ===== */}
         <section className="bg-brand-900 py-24 text-center">
           <div className="max-w-3xl mx-auto px-8">
-            <Heart className="w-12 h-12 text-brand-100 mx-auto mb-6 fill-brand-100" />
-            <h2 className="text-4xl md:text-5xl font-serif text-white mb-6">Your story could start here.</h2>
-            <p className="text-brand-100 text-lg mb-10 max-w-xl mx-auto opacity-90">
+            <Heart data-reveal="scale" className="w-12 h-12 text-brand-100 mx-auto mb-6 fill-brand-100" />
+            <h2 data-reveal="up" className="text-4xl md:text-5xl font-serif text-white mb-6">Your story could start here.</h2>
+            <p data-reveal="up" className="text-brand-100 text-lg mb-10 max-w-xl mx-auto opacity-90">
               Join thousands of singles who are finding meaningful, lifelong connections in a secure and trusted community.
             </p>
-            <Link href="/register" className="inline-block px-10 py-4 bg-white text-brand-900 font-bold rounded-full hover:bg-cream transition shadow-xl hover:-translate-y-1">
-              Create Your Profile &rarr;
-            </Link>
+            <div data-reveal="fade">
+              <Link href="/register" className="inline-block px-10 py-4 bg-white text-brand-900 font-bold rounded-full hover:bg-cream transition shadow-xl hover:-translate-y-1">
+                Create Your Profile &rarr;
+              </Link>
+            </div>
           </div>
         </section>
 
         {/* ===== FOOTER ===== */}
         <footer className="bg-dark text-gray-400 py-16 text-sm">
           <div className="max-w-7xl mx-auto px-8 grid md:grid-cols-4 gap-8">
-            <div className="col-span-2">
+            <div className="col-span-2" data-reveal="up">
               <div className="flex items-center space-x-2 mb-6">
                 <div className="w-6 h-6 rounded bg-[#4a3b3b] flex items-center justify-center">
                   <span className="text-white font-serif font-bold text-sm leading-none">N</span>
@@ -330,7 +334,7 @@ export default function LandingPage() {
               <p className="mb-4 max-w-sm leading-relaxed">A modern, inclusive matrimony platform designed to connect people based on shared values, deep compatibility, and serious future goals.</p>
               <p>&copy; {new Date().getFullYear()} NIRA Matrimony. All rights reserved.</p>
             </div>
-            <div>
+            <div data-reveal="up">
               <h4 className="text-white font-semibold mb-6 uppercase tracking-wider text-xs">Discover</h4>
               <ul className="space-y-3">
                 <li><a href="#how-it-works" onClick={(e) => scrollTo(e, 'how-it-works')} className="hover:text-white transition">How it Works</a></li>
@@ -339,7 +343,7 @@ export default function LandingPage() {
                 <li><Link href="/register" className="hover:text-white transition">Join NIRA</Link></li>
               </ul>
             </div>
-            <div>
+            <div data-reveal="up">
               <h4 className="text-white font-semibold mb-6 uppercase tracking-wider text-xs">Legal</h4>
               <ul className="space-y-3">
                 <li><Link href="#" className="hover:text-white transition">Privacy Policy</Link></li>
