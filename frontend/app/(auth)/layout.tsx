@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 export default function AuthLayout({
@@ -18,7 +18,7 @@ export default function AuthLayout({
         </Link>
       </header>
       
-      <div className="flex-1 flex flex-col items-center justify-center p-4 pt-16">
+      <div className="flex-1 flex flex-col items-center justify-center min-h-screen py-16 px-4">
         <div className="w-full max-w-md">
           {children}
         </div>
@@ -26,3 +26,4 @@ export default function AuthLayout({
     </div>
   );
 }
+

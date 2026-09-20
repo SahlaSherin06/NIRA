@@ -1,15 +1,12 @@
-import express from "express";
+﻿import express from "express";
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
-import { toNodeHandler } from "better-auth/node";
 
 dotenv.config();
 
-// We must import connectDB and auth AFTER dotenv.config() 
-// so environment variables are populated.
 import { connectDB } from "./config/db";
-import { auth } from "./config/auth";
-import profileRoutes from "./routes/profileRoutes";
+import authRoutes from "./routes/authRoutes";
 
 const app = express();
 
@@ -25,26 +22,13 @@ app.use(
 );
 
 app.use(express.json());
+app.use(cookieParser());
 
 // Connect to MongoDB
 connectDB();
 
 // Mount API Routes
-app.use("/api/profile", profileRoutes);
-
-// Mount Better Auth node handler with error catching
-app.use("/api/auth", async (req, res, next) => {
-  try {
-    const handler = toNodeHandler(auth);
-    await handler(req, res);
-  } catch (error: any) {
-    console.error(" BETTER AUTH FATAL CRASH:", error);
-    res.status(500).json({ 
-      error: "Backend Auth Crash", 
-      message: error.message || String(error)
-    });
-  }
-});
+app.use("/api/auth", authRoutes);
 
 app.get("/", (_req, res) => {
   res.json({
@@ -57,3 +41,5 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`NIRA backend running on port ${PORT}`);
 });
+
+

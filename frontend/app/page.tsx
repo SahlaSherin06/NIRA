@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { 
+import {
   ShieldCheck, 
   Lock, 
   HeartHandshake, 
@@ -18,102 +18,28 @@ import {
   LineChart,
   UserCheck
 } from "lucide-react";
+import { LandingNavbar } from "@/components/layout/LandingNavbar";
+import { LandingFooter } from "@/components/layout/LandingFooter";
 
 export default function LandingPage() {
-  const [activeSection, setActiveSection] = useState("");
-
-  useEffect(() => {
-    // Clear any lingering URL hashes (like #why-nira) from previous clicks
-    // so the page always starts clean
-    if (window.location.hash) {
-      window.history.replaceState(null, '', window.location.pathname);
-      window.scrollTo(0, 0);
-    }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setActiveSection(entry.target.id);
-          }
-        });
-      },
-      { rootMargin: "-20% 0px -80% 0px" } 
-    );
-
-    const sections = document.querySelectorAll("section[id]");
-    sections.forEach((section) => observer.observe(section));
-
-    return () => observer.disconnect();
-  }, []);
-
   const scrollTo = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
     e.preventDefault();
     const element = document.getElementById(id);
     if (element) {
-      // Calculate exact position, subtract 80px for the sticky navbar height
       const y = element.getBoundingClientRect().top + window.scrollY - 80;
       window.scrollTo({ top: y, behavior: "smooth" });
-      setActiveSection(id);
     }
   };
 
-  const navLinks = [
-    { name: "How it Works", id: "how-it-works" },
-    { name: "Privacy & Safety", id: "privacy-safety" },
-    { name: "Why NIRA", id: "why-nira" },
-    { name: "Success Stories", id: "success-stories" },
-  ];
-
   return (
     <div className="min-h-screen bg-cream text-dark font-sans selection:bg-brand-100 selection:text-brand-900">
-      {/* ===== STICKY NAVIGATION ===== */}
-      <nav className="fixed top-0 w-full z-50 bg-cream/90 backdrop-blur-md border-b border-brand-50 transition-all">
-        <div className="flex items-center justify-between px-8 py-4 max-w-7xl mx-auto">
-          {/* Logo */}
-          <div className="flex items-center space-x-2 cursor-pointer" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
-            <div className="w-8 h-8 rounded bg-[#e8dfd8] flex items-center justify-center">
-              <span className="text-brand-900 font-serif font-bold text-lg leading-none">N</span>
-            </div>
-            <span className="text-xl font-bold tracking-tight text-brand-900">NIRA</span>
-          </div>
-          
-          <div className="hidden md:flex items-center space-x-8 text-sm font-medium">
-            {navLinks.map((link) => (
-              <a
-                key={link.id}
-                href={`#${link.id}`}
-                onClick={(e) => scrollTo(e, link.id)}
-                className={`relative py-2 transition-colors ${
-                  activeSection === link.id ? "text-brand-900" : "text-gray-500 hover:text-brand-900"
-                }`}
-              >
-                {link.name}
-                {/* Underline indicator */}
-                {activeSection === link.id && (
-                  <span className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-900 rounded-t-md layout-auto"></span>
-                )}
-              </a>
-            ))}
-          </div>
+      <LandingNavbar />
 
-          <div className="flex items-center space-x-4">
-            <Link href="/login" className="text-sm font-medium text-gray-600 hover:text-brand-900 transition">
-              Log In
-            </Link>
-            <Link href="/register" className="text-sm font-medium px-5 py-2.5 rounded-full bg-brand-900 text-white hover:bg-brand-800 transition shadow-sm">
-              Get Started
-            </Link>
-          </div>
-        </div>
-      </nav>
-
-      {/* Padding to account for fixed navbar */}
       <div className="pt-20">
         
         {/* ===== HERO SECTION ===== */}
-        <section id="hero" className="px-8 pt-12 pb-24 max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-8">
+        <section id="hero" className="px-8 pt-6 lg:pt-10 pb-24 max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-start">
+          <div className="space-y-8 lg:mt-12">
             <div data-reveal="up" className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-brand-50 border border-brand-100 text-brand-900 text-sm font-medium">
               <Sparkles className="w-4 h-4" />
               <span>Intentionally designed for meaningful matrimony</span>
@@ -322,39 +248,8 @@ export default function LandingPage() {
         </section>
 
         {/* ===== FOOTER ===== */}
-        <footer className="bg-dark text-gray-400 py-16 text-sm">
-          <div className="max-w-7xl mx-auto px-8 grid md:grid-cols-4 gap-8">
-            <div className="col-span-2" data-reveal="up">
-              <div className="flex items-center space-x-2 mb-6">
-                <div className="w-6 h-6 rounded bg-[#4a3b3b] flex items-center justify-center">
-                  <span className="text-white font-serif font-bold text-sm leading-none">N</span>
-                </div>
-                <span className="text-xl font-bold text-white tracking-tight">NIRA</span>
-              </div>
-              <p className="mb-4 max-w-sm leading-relaxed">A modern, inclusive matrimony platform designed to connect people based on shared values, deep compatibility, and serious future goals.</p>
-              <p>&copy; {new Date().getFullYear()} NIRA Matrimony. All rights reserved.</p>
-            </div>
-            <div data-reveal="up">
-              <h4 className="text-white font-semibold mb-6 uppercase tracking-wider text-xs">Discover</h4>
-              <ul className="space-y-3">
-                <li><a href="#how-it-works" onClick={(e) => scrollTo(e, 'how-it-works')} className="hover:text-white transition">How it Works</a></li>
-                <li><a href="#privacy-safety" onClick={(e) => scrollTo(e, 'privacy-safety')} className="hover:text-white transition">Safety & Trust</a></li>
-                <li><a href="#success-stories" onClick={(e) => scrollTo(e, 'success-stories')} className="hover:text-white transition">Success Stories</a></li>
-                <li><Link href="/register" className="hover:text-white transition">Join NIRA</Link></li>
-              </ul>
-            </div>
-            <div data-reveal="up">
-              <h4 className="text-white font-semibold mb-6 uppercase tracking-wider text-xs">Legal</h4>
-              <ul className="space-y-3">
-                <li><Link href="#" className="hover:text-white transition">Privacy Policy</Link></li>
-                <li><Link href="#" className="hover:text-white transition">Terms of Service</Link></li>
-                <li><Link href="#" className="hover:text-white transition">Cookie Policy</Link></li>
-                <li><Link href="#" className="hover:text-white transition">Community Guidelines</Link></li>
-              </ul>
-            </div>
-          </div>
-        </footer>
       </div>
+      <LandingFooter />
     </div>
   );
 }
