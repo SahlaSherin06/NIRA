@@ -7,4 +7,4 @@ export const api = axios.create({
   withCredentials: true, // This is very important to send the HTTP-Only refresh cookie!
 });
 
-// We will add the interceptor for Access Token in the next step
+

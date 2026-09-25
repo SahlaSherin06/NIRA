@@ -1,35 +1,158 @@
-"use client";
+﻿"use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Mail, Key } from "lucide-react";
-import { useGoogleLogin } from "@react-oauth/google";
+import { Eye, EyeOff } from "lucide-react";
 import { useSession } from "@/lib/auth-client";
+import { useGoogleLogin } from "@react-oauth/google";
 
-const loginSchema = z.object({
+const emailSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
-  password: z.string().optional(),
 });
 
-type LoginFormValues = z.infer<typeof loginSchema>;
+const passwordSchema = z.object({
+  password: z.string().min(1, "Password is required"),
+});
+
+type EmailFormValues = z.infer<typeof emailSchema>;
+type PasswordFormValues = z.infer<typeof passwordSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
-  const { signIn, signInOtpInit, signInOtpVerify, signInWithGoogle } = useSession();
+  const { data: session, loginStep1, loginStep2, loginStep3, signInWithGoogle } = useSession();
   
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [error, setError] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
   
+  // Stored values
+  const [email, setEmail] = useState("");
+  const [otp, setOtp] = useState("");
+  
+  // Step 2: OTP Timer state
+  const [resendTimer, setResendTimer] = useState(0);
+
+  // Step 3: Password UI state
+  const [showPassword, setShowPassword] = useState(false);
+
+    // If user is already logged in, redirect them to home
+  useEffect(() => {
+    if (session) {
+      router.replace("/home");
+    }
+  }, [session, router]);
+
+  // Restore state from sessionStorage on mount
+  useEffect(() => {
+    const savedStep = sessionStorage.getItem("nira_login_step");
+    const savedEmail = sessionStorage.getItem("nira_login_email");
+    if (savedStep && savedEmail) {
+      setStep(Number(savedStep) as 1 | 2 | 3);
+      setEmail(savedEmail);
+    }
+  }, []);
+
+  // Save state whenever it changes
+  useEffect(() => {
+    sessionStorage.setItem("nira_login_step", step.toString());
+    if (email) {
+      sessionStorage.setItem("nira_login_email", email);
+    }
+  }, [step, email]);
+
+  // Email Form
+  const {
+    register: registerEmail,
+    handleSubmit: handleEmailSubmit,
+    formState: { errors: emailErrors },
+  } = useForm<EmailFormValues>({
+    resolver: zodResolver(emailSchema),
+  });
+
+  // Password Form
+  const {
+    register: registerPassword,
+    handleSubmit: handlePasswordSubmit,
+    formState: { errors: passwordErrors },
+  } = useForm<PasswordFormValues>({
+    resolver: zodResolver(passwordSchema),
+  });
+
+  // Timer Effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (step === 2 && resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [step, resendTimer]);
+
+  const onEmailSubmit = async (data: EmailFormValues) => {
+    setError(null);
+    try {
+      await loginStep1.mutateAsync({ email: data.email });
+      setEmail(data.email);
+      setResendTimer(120); // 2 minutes
+      setStep(2);
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to send OTP. Please try again.");
+    }
+  };
+
+  const onResendOtp = async () => {
+    setError(null);
+    try {
+      await loginStep1.mutateAsync({ email });
+      setResendTimer(120);
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to resend OTP.");
+    }
+  };
+
+  const handleOtpChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Strict digit validation (no letters, emojis, or spaces)
+    const value = e.target.value.replace(/\D/g, "");
+    setOtp(value);
+  };
+
+  const onVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    if (otp.length !== 6) {
+      setError("OTP must be 6 digits");
+      return;
+    }
+    try {
+      await loginStep2.mutateAsync({ email, otp });
+      setStep(3);
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Invalid OTP. Please try again.");
+    }
+  };
+
+  const onPasswordSubmit = async (data: PasswordFormValues) => {
+    setError(null);
+    try {
+      await loginStep3.mutateAsync({ email, password: data.password });
+      sessionStorage.removeItem("nira_login_step");
+      sessionStorage.removeItem("nira_login_email");
+      router.replace("/home");
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Invalid password.");
+    }
+  };
+
   const handleGoogleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
         setError(null);
         await signInWithGoogle.mutateAsync(tokenResponse.access_token);
-        router.push("/home");
+        router.replace("/home");
       } catch (err: any) {
         setError(err.response?.data?.message || "Google login failed");
       }
@@ -37,73 +160,12 @@ export default function LoginPage() {
     onError: () => setError("Google Login Failed"),
   });
 
-  // Login Modes
-  const [loginMode, setLoginMode] = useState<"password" | "otp">("password");
-  
-  // OTP State
-  const [otpStep, setOtpStep] = useState<1 | 2>(1);
-  const [savedEmail, setSavedEmail] = useState("");
-  const [otp, setOtp] = useState("");
-  const [isVerifying, setIsVerifying] = useState(false);
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    getValues
-  } = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
-  });
-
-  const onSubmit = async (data: LoginFormValues) => {
-    setError(null);
-
-    try {
-      if (loginMode === "password") {
-        if (!data.password) {
-          setError("Password is required");
-          return;
-        }
-        const result = await signIn.mutateAsync({
-          email: data.email,
-          password: data.password,
-        });
-        router.push("/home"); // Adjust to /onboarding if needed based on profile check
-      } else {
-        // Init OTP
-        await signInOtpInit.mutateAsync({ email: data.email });
-        setSavedEmail(data.email);
-        setOtpStep(2);
-      }
-    } catch (err: any) {
-      setError(err.response?.data?.message || "An error occurred. Please try again.");
-    }
+  // Format timer (e.g., 120 -> 02:00)
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60).toString().padStart(2, "0");
+    const s = (seconds % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
   };
-
-  const onVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (otp.length !== 6) {
-      setError("Please enter a valid 6-digit OTP.");
-      return;
-    }
-    
-    setIsVerifying(true);
-    setError(null);
-    try {
-      const result = await signInOtpVerify.mutateAsync({
-        email: savedEmail,
-        otp: otp
-      });
-      router.push("/home");
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Invalid OTP. Please try again.");
-    } finally {
-      setIsVerifying(false);
-    }
-  };
-
-  // Google Sign In (Mock trigger, real integration requires Google OAuth Provider setup on frontend)
-
 
   return (
     <div data-reveal="up" className="bg-white p-10 rounded-[2rem] shadow-xl shadow-brand-900/5 relative overflow-hidden">
@@ -112,12 +174,14 @@ export default function LoginPage() {
       <div className="text-center mb-8" data-reveal="fade">
         <h1 className="text-brand-900 font-serif font-bold text-lg mb-2">NIRA</h1>
         <h2 className="text-2xl font-serif text-gray-900 mb-2">
-          {otpStep === 2 ? "Enter OTP" : "Welcome Back"}
+          {step === 1 && "Welcome Back"}
+          {step === 2 && "Verify Email"}
+          {step === 3 && "Secure Login"}
         </h2>
         <p className="text-sm text-gray-600 max-w-[280px] mx-auto">
-          {otpStep === 2 
-            ? `We've sent a 6-digit code to ${savedEmail}`
-            : "Log in to continue your journey."}
+          {step === 1 && "Enter your email to securely log in."}
+          {step === 2 && `We've sent a 6-digit code to ${email}`}
+          {step === 3 && "Enter your password to access your account."}
         </p>
       </div>
       
@@ -127,74 +191,27 @@ export default function LoginPage() {
         </div>
       )}
 
-      {otpStep === 1 ? (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" data-reveal-group>
-          {/* Method Toggle */}
-          <div className="flex p-1 bg-gray-100 rounded-xl mb-6">
-            <button
-              type="button"
-              onClick={() => setLoginMode("password")}
-              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
-                loginMode === "password" ? "bg-white text-brand-900 shadow" : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              Password
-            </button>
-            <button
-              type="button"
-              onClick={() => setLoginMode("otp")}
-              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
-                loginMode === "otp" ? "bg-white text-brand-900 shadow" : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              Email OTP
-            </button>
-          </div>
-
+      {/* STEP 1: EMAIL */}
+      {step === 1 && (
+        <form onSubmit={handleEmailSubmit(onEmailSubmit)} className="space-y-5" data-reveal-group>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Email Address</label>
             <input
-              {...register("email")}
+              {...registerEmail("email")}
               type="email"
               className="w-full px-4 py-3 bg-[#F9F7F6] border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-900/20 transition-all placeholder:text-gray-400"
               placeholder="you@example.com"
             />
-            {errors.email && <p className="mt-1.5 ml-1 text-sm text-red-600 font-medium">{errors.email.message}</p>}
+            {emailErrors.email && <p className="mt-1.5 ml-1 text-sm text-red-600 font-medium">{emailErrors.email.message}</p>}
           </div>
-
-          {loginMode === "password" && (
-            <div>
-              <div className="flex justify-between items-center mb-1.5 ml-1">
-                <label className="block text-sm font-medium text-gray-700">Password</label>
-                <Link href="/forgot-password" className="text-xs text-brand-900 hover:underline">Forgot password?</Link>
-              </div>
-              <div className="relative">
-                <input
-                  {...register("password")}
-                  type={showPassword ? "text" : "password"}
-                  className="w-full px-4 py-3 bg-[#F9F7F6] border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-900/20 transition-all placeholder:text-gray-400"
-                  placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors"
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-            </div>
-          )}
 
           <div className="pt-2">
             <button
               type="submit"
-              disabled={signIn.isPending || signInOtpInit.isPending}
+              disabled={loginStep1.isPending}
               className="w-full flex justify-center py-3.5 px-4 rounded-xl text-sm font-medium text-white bg-[#8B4253] hover:bg-[#7a3847] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-900 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
-              {signIn.isPending || signInOtpInit.isPending 
-                ? "Processing..." 
-                : (loginMode === "password" ? "Sign In to NIRA" : "Send Login OTP")}
+              {loginStep1.isPending ? "Sending OTP..." : "Send OTP"}
             </button>
           </div>
           
@@ -221,37 +238,99 @@ export default function LoginPage() {
             Google
           </button>
         </form>
-      ) : (
+      )}
+
+      {/* STEP 2: OTP */}
+      {step === 2 && (
         <form onSubmit={onVerifyOtp} className="space-y-6">
           <div className="space-y-2">
             <label className="block text-sm text-gray-800 text-center font-medium">Enter 6-digit OTP</label>
             <input
-              type="text"
+              type="text" // using text to allow max length & strict filtering
               value={otp}
-              onChange={(e) => setOtp(e.target.value)}
+              onChange={handleOtpChange}
               maxLength={6}
               className="w-full px-4 py-4 bg-[#F9F7F6] border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-900/20 transition-all placeholder:text-gray-400 text-center text-2xl tracking-widest font-mono"
               placeholder="------"
+              autoComplete="one-time-code"
             />
           </div>
+          
           <button
             type="submit"
-            disabled={isVerifying || otp.length !== 6}
+            disabled={loginStep2.isPending || otp.length !== 6}
             className="w-full flex justify-center py-4 px-4 rounded-xl text-sm font-medium text-white bg-[#8B4253] hover:bg-[#7a3847] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-900 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
-            {isVerifying ? "Verifying..." : "Verify & Login"}
+            {loginStep2.isPending ? "Verifying..." : "Verify OTP"}
           </button>
+
+          <div className="text-center mt-4">
+            {resendTimer > 0 ? (
+              <p className="text-sm text-gray-500">
+                Resend OTP in <span className="font-medium text-brand-900">{formatTime(resendTimer)}</span>
+              </p>
+            ) : (
+              <button
+                type="button"
+                onClick={onResendOtp}
+                disabled={loginStep1.isPending}
+                className="text-sm text-brand-900 font-medium hover:underline focus:outline-none disabled:opacity-50"
+              >
+                {loginStep1.isPending ? "Sending..." : "Resend OTP"}
+              </button>
+            )}
+          </div>
+
           <button
             type="button"
-            onClick={() => setOtpStep(1)}
-            className="w-full text-center text-sm text-brand-900 hover:underline mt-2"
+            onClick={() => { sessionStorage.removeItem("nira_login_step"); sessionStorage.removeItem("nira_login_email"); setStep(1); setOtp(""); setError(null); }}
+            className="w-full text-center text-sm text-gray-500 hover:text-gray-700 transition-colors mt-2"
           >
-            Wrong email or try password instead
+            Change Email
           </button>
         </form>
       )}
 
-      {otpStep === 1 && (
+      {/* STEP 3: PASSWORD */}
+      {step === 3 && (
+        <form onSubmit={handlePasswordSubmit(onPasswordSubmit)} className="space-y-5" data-reveal-group>
+          <div>
+            <div className="flex justify-between items-center mb-1.5 ml-1">
+              <label className="block text-sm font-medium text-gray-700">Password</label>
+              <Link href="/forgot-password" className="text-xs text-brand-900 hover:underline">Forgot password?</Link>
+            </div>
+            <div className="relative">
+              <input
+                {...registerPassword("password")}
+                type={showPassword ? "text" : "password"}
+                className="w-full px-4 py-3 bg-[#F9F7F6] border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-900/20 transition-all placeholder:text-gray-400"
+                placeholder="Enter your password"
+                autoComplete="current-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors"
+              >
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
+            {passwordErrors.password && <p className="mt-1.5 ml-1 text-sm text-red-600 font-medium">{passwordErrors.password.message}</p>}
+          </div>
+
+          <div className="pt-2">
+            <button
+              type="submit"
+              disabled={loginStep3.isPending}
+              className="w-full flex justify-center py-3.5 px-4 rounded-xl text-sm font-medium text-white bg-[#8B4253] hover:bg-[#7a3847] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-900 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              {loginStep3.isPending ? "Logging in..." : "Login Securely"}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {step === 1 && (
         <div className="mt-8 text-center text-sm border-t border-gray-100 pt-6" data-reveal="fade">
           <span className="text-gray-500">Don't have an account? </span>
           <Link href="/register" className="font-bold text-brand-900 hover:text-brand-800 transition-colors">
@@ -262,6 +341,4 @@ export default function LoginPage() {
     </div>
   );
 }
-
-
 

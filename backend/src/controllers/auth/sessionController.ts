@@ -7,7 +7,7 @@ import { AuthRequest } from "../../middleware/authMiddleware";
 
 const REFRESH_SECRET: string = process.env.JWT_REFRESH_SECRET || "refresh_secret";
 
-// 9. GET CURRENT USER (ME)
+//  GET CURRENT USER 
 export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?.userId;

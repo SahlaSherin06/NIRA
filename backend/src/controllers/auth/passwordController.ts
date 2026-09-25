@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
-import crypto from "crypto";
 import { User } from "../../models/User";
 import { Session } from "../../models/Session";
 import { redis } from "../../utils/redisClient";
@@ -28,8 +27,8 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
     
     await redis.set(redisKey, hashedOtp, "EX", 900); // 15 mins
 
-    // Send OTP via email
-    await sendPasswordResetOtpEmail(email, otp);
+    // Send OTP via email (asynchronous to prevent UI hanging)
+    sendPasswordResetOtpEmail(email, otp).catch(err => console.error("Reset OTP email failed:", err));
 
     res.status(200).json({ message: "If an account with that email exists, an OTP has been sent." });
   } catch (error) {

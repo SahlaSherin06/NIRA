@@ -7,8 +7,7 @@ export function LandingNavbar() {
   const [activeSection, setActiveSection] = useState("");
 
   useEffect(() => {
-    // Clear any lingering URL hashes (like #why-nira) from previous clicks
-    // so the page always starts clean
+
     if (window.location.hash) {
       window.history.replaceState(null, '', window.location.pathname);
       window.scrollTo(0, 0);
@@ -35,7 +34,6 @@ export function LandingNavbar() {
     e.preventDefault();
     const element = document.getElementById(id);
     if (element) {
-      // Calculate exact position, subtract 80px for the sticky navbar height
       const y = element.getBoundingClientRect().top + window.scrollY - 80;
       window.scrollTo({ top: y, behavior: "smooth" });
       setActiveSection(id);

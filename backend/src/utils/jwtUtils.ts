@@ -6,11 +6,12 @@ import { Session } from "../models/Session";
 const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || "access_secret";
 const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "refresh_secret";
 
-export const generateTokens = async (userId: mongoose.Types.ObjectId, res: Response) => {
-  // 1. Create Access Token (Short-lived, e.g., 15 minutes)
+export const generateTokens = async (userId: mongoose.Types.ObjectId, res: Response) => 
+  {
+  // 1. Create Access Token
   const accessToken = jwt.sign({ userId }, ACCESS_SECRET, { expiresIn: "15m" });
 
-  // 2. Create Refresh Token (Long-lived, e.g., 7 days)
+  // 2. Create Refresh Token 
   const refreshToken = jwt.sign({ userId }, REFRESH_SECRET, { expiresIn: "7d" });
 
   // 3. Store Refresh Token in DB (Session Collection)
@@ -19,7 +20,7 @@ export const generateTokens = async (userId: mongoose.Types.ObjectId, res: Respo
   
   await Session.create({
     userId,
-    refreshToken, // In a production app, we would hash this before saving!
+    refreshToken, 
     expiresAt,
   });
 

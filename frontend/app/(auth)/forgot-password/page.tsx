@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -20,6 +20,12 @@ export default function ForgotPasswordPage() {
   
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
+
+  // Clear any saved login state when entering forgot password
+  useEffect(() => {
+    sessionStorage.removeItem("nira_login_step");
+    sessionStorage.removeItem("nira_login_email");
+  }, []);
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();

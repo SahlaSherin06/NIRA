@@ -4,12 +4,16 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
-});
+  tls: { rejectUnauthorized: false },
+  family: 4 
+} as any);
 
 export const sendOtpEmail = async (to: string, otp: string) => {
   const mailOptions = {
@@ -32,26 +36,6 @@ export const sendOtpEmail = async (to: string, otp: string) => {
   }
 };
 
-export const sendResetPasswordEmail = async (to: string, resetLink: string) => {
-  const mailOptions = {
-    from: `NIRA Matrimony <${process.env.EMAIL_USER}>`,
-    to,
-    subject: "Reset Your NIRA Password",
-    html: `<div style='font-family: Arial, sans-serif; padding: 20px;'>
-      <h2>Password Reset Request</h2>
-      <p>You requested to reset your password. Click the link below to set a new password:</p>
-      <a href='${resetLink}' style='background-color: #4A154B; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 10px;'>Reset Password</a>
-      <p style='margin-top: 20px; font-size: 12px; color: #666;'>This link will expire in 15 minutes. If you did not request this, please ignore this email.</p>
-    </div>`,
-  };
-
-  try {
-    await transporter.sendMail(mailOptions);
-  } catch (error) {
-    console.error("Reset email sending failed:", error);
-    throw new Error("Could not send reset password email");
-  }
-};
 
 export const sendPasswordResetOtpEmail = async (to: string, otp: string) => {
   const mailOptions = {

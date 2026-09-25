@@ -1,4 +1,4 @@
-﻿import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "./axios";
 
 // Interceptor to automatically add the Access Token to headers
@@ -39,7 +39,7 @@ api.interceptors.response.use(
   }
 );
 
-// Custom hook to replace Better Auth's useSession
+// Custom hook 
 export const useSession = () => {
   const queryClient = useQueryClient();
 
@@ -57,10 +57,24 @@ export const useSession = () => {
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
-  // 2. Normal Sign In (Email + Password)
-  const signInMutation = useMutation({
-    mutationFn: async (credentials: any) => {
-      const res = await api.post("/auth/login/password", credentials);
+  // --- 3-STEP 2FA LOGIN MUTATIONS ---
+  const loginStep1 = useMutation({
+    mutationFn: async (data: { email: string }) => {
+      const res = await api.post("/auth/login/step1-email", data);
+      return res.data;
+    },
+  });
+
+  const loginStep2 = useMutation({
+    mutationFn: async (data: { email: string; otp: string }) => {
+      const res = await api.post("/auth/login/step2-otp", data);
+      return res.data;
+    },
+  });
+
+  const loginStep3 = useMutation({
+    mutationFn: async (data: { email: string; password: string }) => {
+      const res = await api.post("/auth/login/step3-password", data);
       return res.data;
     },
     onSuccess: (data) => {
@@ -69,19 +83,26 @@ export const useSession = () => {
       queryClient.invalidateQueries({ queryKey: ['session'] });
     },
   });
+  // ----------------------------------
 
-  // 3. Register (Init)
-  const signUpMutation = useMutation({
-    mutationFn: async (userData: any) => {
-      const res = await api.post("/auth/register", userData);
+  // --- 3-STEP REGISTRATION MUTATIONS ---
+  const registerStep1 = useMutation({
+    mutationFn: async (data: { name: string; email: string; gender: string; createdFor: string }) => {
+      const res = await api.post("/auth/register/step1", data);
       return res.data;
     },
   });
 
-  // 4. Register Verify (OTP)
-  const verifySignUpMutation = useMutation({
-    mutationFn: async (otpData: any) => {
-      const res = await api.post("/auth/verify-registration", otpData);
+  const registerStep2 = useMutation({
+    mutationFn: async (data: { email: string; otp: string }) => {
+      const res = await api.post("/auth/register/step2", data);
+      return res.data;
+    },
+  });
+
+  const registerStep3 = useMutation({
+    mutationFn: async (data: { email: string; password: string; confirmPassword: string }) => {
+      const res = await api.post("/auth/register/step3", data);
       return res.data;
     },
     onSuccess: (data) => {
@@ -90,8 +111,9 @@ export const useSession = () => {
       queryClient.invalidateQueries({ queryKey: ['session'] });
     },
   });
+  // -------------------------------------
 
-  // 5. Sign Out
+  // Sign Out
   const signOutMutation = useMutation({
     mutationFn: async () => {
       await api.post("/auth/logout");
@@ -103,7 +125,7 @@ export const useSession = () => {
     },
   });
 
-  // 6. Google Sign In
+  // Google Sign In
   const googleSignInMutation = useMutation({
     mutationFn: async (accessToken: string) => {
       const res = await api.post("/auth/google", { accessToken });
@@ -116,40 +138,18 @@ export const useSession = () => {
     },
   });
 
-    // 7. Login OTP Init
-  const signInOtpInitMutation = useMutation({
-    mutationFn: async (data: { email: string }) => {
-      const res = await api.post("/auth/login/otp/init", data);
-      return res.data;
-    },
-  });
-
-  // 8. Login OTP Verify
-  const signInOtpVerifyMutation = useMutation({
-    mutationFn: async (data: { email: string; otp: string }) => {
-      const res = await api.post("/auth/login/otp/verify", data);
-      return res.data;
-    },
-    onSuccess: (data) => {
-      localStorage.setItem("nira_access_token", data.accessToken);
-      queryClient.setQueryData(['session'], { user: data.user });
-      queryClient.invalidateQueries({ queryKey: ['session'] });
-    },
-  });
 
   return {
     data: session,
     isPending: isLoading,
     error,
-    signIn: signInMutation,
-    signUp: signUpMutation,
-    verifySignUp: verifySignUpMutation,
+    loginStep1,
+    loginStep2,
+    loginStep3,
+    registerStep1,
+    registerStep2,
+    registerStep3,
     signOut: signOutMutation,
     signInWithGoogle: googleSignInMutation,
-    signInOtpInit: signInOtpInitMutation,
-    signInOtpVerify: signInOtpVerifyMutation,
   };
 };
-
-
-

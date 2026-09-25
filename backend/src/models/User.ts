@@ -3,7 +3,7 @@
 export interface IUser extends Document {
   name: string;
   email: string;
-  password?: string; // Optional because Google users won't have a password
+  password?: string; 
   isEmailVerified: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -22,7 +22,7 @@ const userSchema: Schema = new Schema(
       lowercase: true,
     },
     password: {
-      type: String, // Removed 'required: true' to support Google login
+      type: String, 
     },
     isEmailVerified: {
       type: Boolean,

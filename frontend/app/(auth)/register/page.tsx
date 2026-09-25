@@ -1,20 +1,29 @@
-﻿"use client";
+"use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
-import { useGoogleLogin } from "@react-oauth/google";
+import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
+import { useGoogleLogin } from "@react-oauth/google";
 
-const registerSchema = z.object({
+const createdForOptions = ["Myself", "Son", "Daughter", "Brother", "Sister", "Friend", "Relative"];
+const genderOptions = ["Male", "Female", "Other"];
+
+// Step 1 Schema
+const basicInfoSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Please enter a valid email address"),
+  email: z.string().email("Invalid email address"),
+});
+type BasicInfoValues = z.infer<typeof basicInfoSchema>;
+
+// Step 3 Schema
+const passwordSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters"),
-  confirmPassword: z.string().min(8, "Please confirm your password"),
+  confirmPassword: z.string(),
   agree: z.boolean().refine((val) => val === true, {
     message: "You must agree to the terms",
   }),
@@ -22,114 +31,180 @@ const registerSchema = z.object({
   message: "Passwords do not match",
   path: ["confirmPassword"],
 });
-
-type RegisterFormValues = z.infer<typeof registerSchema>;
+type PasswordValues = z.infer<typeof passwordSchema>;
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { signUp, verifySignUp, signInWithGoogle } = useSession();
-  
+  const { data: session, registerStep1, registerStep2, registerStep3, signInWithGoogle } = useSession();
+
+  // If user is already logged in, redirect them to home
+  useEffect(() => {
+    if (session) {
+      router.replace("/home");
+    }
+  }, [session, router]);
+
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [error, setError] = useState<string | null>(null);
+
+  // Global State for Registration Flow
+  const [createdFor, setCreatedFor] = useState("Myself");
+  const [gender, setGender] = useState("Female");
+  const [email, setEmail] = useState("");
+
+  // OTP Timer State
+  const [timeLeft, setTimeLeft] = useState(120);
+  const [otp, setOtp] = useState("");
+
+  // UI State
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
-  // Multi-step Registration
-  const [step, setStep] = useState<1 | 2>(1);
-  const [savedEmail, setSavedEmail] = useState("");
-  const [otp, setOtp] = useState("");
-  const [isVerifying, setIsVerifying] = useState(false);
-  
-  // Extra UI states
-  const [createdFor, setCreatedFor] = useState("Self");
-  const [gender, setGender] = useState("Male");
 
-  const handleGoogleLogin = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      try {
-        setError(null);
-        await signInWithGoogle.mutateAsync(tokenResponse.access_token);
-        router.push("/home");
-      } catch (err: any) {
-        setError(err.response?.data?.message || "Google signup failed");
-      }
-    },
-    onError: () => setError("Google Signup Failed"),
+  // Restore state from sessionStorage on mount
+  useEffect(() => {
+    const savedStep = sessionStorage.getItem("nira_reg_step");
+    const savedEmail = sessionStorage.getItem("nira_reg_email");
+    const savedGender = sessionStorage.getItem("nira_reg_gender");
+    const savedCreatedFor = sessionStorage.getItem("nira_reg_createdFor");
+    
+    if (savedStep && savedEmail) {
+      setStep(Number(savedStep) as 1 | 2 | 3);
+      setEmail(savedEmail);
+      if (savedGender) setGender(savedGender);
+      if (savedCreatedFor) setCreatedFor(savedCreatedFor);
+    }
+  }, []);
+
+  // Save state whenever it changes
+  useEffect(() => {
+    sessionStorage.setItem("nira_reg_step", step.toString());
+    if (email) sessionStorage.setItem("nira_reg_email", email);
+    sessionStorage.setItem("nira_reg_gender", gender);
+    sessionStorage.setItem("nira_reg_createdFor", createdFor);
+  }, [step, email, gender, createdFor]);
+
+  // Timer logic for OTP (Step 2)
+  useEffect(() => {
+    if (step === 2 && timeLeft > 0) {
+      const timerId = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+      return () => clearTimeout(timerId);
+    }
+  }, [step, timeLeft]);
+
+  // Forms
+  const { register: registerBasic, handleSubmit: handleBasicSubmit, formState: { errors: basicErrors } } = useForm<BasicInfoValues>({
+    resolver: zodResolver(basicInfoSchema),
   });
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<RegisterFormValues>({
-    resolver: zodResolver(registerSchema),
+  const { register: registerPass, handleSubmit: handlePassSubmit, formState: { errors: passErrors } } = useForm<PasswordValues>({
+    resolver: zodResolver(passwordSchema),
   });
 
-  const onSubmit = async (data: RegisterFormValues) => {
+  // Action Handlers
+  const onBasicSubmit = async (data: BasicInfoValues) => {
     setError(null);
     try {
-      await signUp.mutateAsync({
+      await registerStep1.mutateAsync({
         name: data.name,
         email: data.email,
-        password: data.password,
-        confirmPassword: data.confirmPassword
+        gender,
+        createdFor,
       });
-      setSavedEmail(data.email);
-      setStep(2); // Move to OTP step
+      setEmail(data.email);
+      setStep(2);
+      setTimeLeft(120); // Reset timer
     } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to initiate registration. Please try again.");
+      setError(err.response?.data?.message || "Failed to initiate registration");
     }
+  };
+
+  const handleOtpChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Only allow digits
+    const value = e.target.value.replace(/\D/g, "");
+    setOtp(value);
   };
 
   const onVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     if (otp.length !== 6) {
-      setError("Please enter a valid 6-digit OTP.");
+      setError("OTP must be exactly 6 digits");
       return;
     }
-    
-    setIsVerifying(true);
-    setError(null);
     try {
-      await verifySignUp.mutateAsync({
-        email: savedEmail,
-        otp: otp
-      });
-      // Verification successful, redirect to onboarding
-      router.push("/home");
+      await registerStep2.mutateAsync({ email, otp });
+      setStep(3);
     } catch (err: any) {
       setError(err.response?.data?.message || "Invalid OTP. Please try again.");
-    } finally {
-      setIsVerifying(false);
     }
   };
 
-  const createdForOptions = ["Self", "Son", "Daughter", "Brother", "Sister", "Friend"];
-  const genderOptions = ["Male", "Female", "Other"];
+  const resendOtp = async () => {
+    setError(null);
+    try {
+      setStep(1);
+      setError("Please re-submit your details to receive a new OTP.");
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const onPasswordSubmit = async (data: PasswordValues) => {
+    setError(null);
+    try {
+      await registerStep3.mutateAsync({
+        email,
+        password: data.password,
+        confirmPassword: data.confirmPassword
+      });
+      
+      sessionStorage.removeItem("nira_reg_step");
+      sessionStorage.removeItem("nira_reg_email");
+      sessionStorage.removeItem("nira_reg_gender");
+      sessionStorage.removeItem("nira_reg_createdFor");
+      
+      router.replace("/home");
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to create account.");
+    }
+  };
+
+  const loginGoogle = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        setError(null);
+        await signInWithGoogle.mutateAsync(tokenResponse.access_token);
+        router.replace("/home");
+      } catch (err: any) {
+        setError(err.response?.data?.message || "Google registration failed");
+      }
+    },
+    onError: () => setError("Google registration failed"),
+  });
 
   return (
-    <div data-reveal="up" className="bg-white p-8 md:p-10 rounded-[2rem] shadow-xl shadow-brand-900/5 relative overflow-hidden">
+    <div data-reveal="up" className="bg-white p-10 rounded-[2rem] shadow-xl shadow-brand-900/5 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-2 bg-brand-900"></div>
       
       <div className="text-center mb-8" data-reveal="fade">
         <h1 className="text-brand-900 font-serif font-bold text-lg mb-2">NIRA</h1>
-        <h2 className="text-2xl font-serif text-gray-900 mb-2">
-          {step === 1 ? "Begin Your Journey" : "Verify Your Email"}
-        </h2>
+        <h2 className="text-2xl font-serif text-gray-900 mb-2">Create an Account</h2>
         <p className="text-sm text-gray-600 max-w-[280px] mx-auto">
-          {step === 1 
-            ? "Create an account to discover genuine, verified connections." 
-            : `We've sent a 6-digit code to ${savedEmail}`}
+          {step === 1 ? "Start your journey to find genuine connections." : 
+           step === 2 ? `Enter the 6-digit OTP sent to ${email}` :
+           "Final step! Secure your account with a password."}
         </p>
       </div>
-      
+
       {error && (
         <div className="mb-6 p-4 bg-red-50/50 border border-red-100 text-red-600 text-sm rounded-xl text-center">
           {error}
         </div>
       )}
 
-      {step === 1 ? (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" data-reveal-group>
+      {/* STEP 1: BASIC INFO */}
+      {step === 1 && (
+        <form onSubmit={handleBasicSubmit(onBasicSubmit)} className="space-y-5" data-reveal-group>
           {/* Profile Created For */}
           <div className="space-y-3">
             <label className="block text-sm text-gray-800">Profile Created For</label>
@@ -151,18 +226,16 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* Full Name */}
           <div className="space-y-1.5">
             <label className="block text-sm text-gray-800">Full Name</label>
             <input
-              {...register("name")}
+              {...registerBasic("name")}
               className="w-full px-4 py-3 bg-[#F9F7F6] border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-900/20 transition-all placeholder:text-gray-400 text-sm"
               placeholder="Enter your full name"
             />
-            {errors.name && <p className="text-xs text-red-600 ml-1">{errors.name.message}</p>}
+            {basicErrors.name && <p className="text-xs text-red-600 ml-1">{basicErrors.name.message}</p>}
           </div>
 
-          {/* Gender */}
           <div className="space-y-3">
             <label className="block text-sm text-gray-800">Gender</label>
             <div className="grid grid-cols-3 gap-2">
@@ -183,84 +256,24 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* Email Address */}
           <div className="space-y-1.5">
             <label className="block text-sm text-gray-800">Email Address</label>
             <input
-              {...register("email")}
+              {...registerBasic("email")}
               type="email"
               className="w-full px-4 py-3 bg-[#F9F7F6] border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-900/20 transition-all placeholder:text-gray-400 text-sm"
               placeholder="name@example.com"
             />
-            {errors.email && <p className="text-xs text-red-600 ml-1">{errors.email.message}</p>}
+            {basicErrors.email && <p className="text-xs text-red-600 ml-1">{basicErrors.email.message}</p>}
           </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            {/* Password */}
-            <div className="space-y-1.5">
-              <label className="block text-sm text-gray-800">Password</label>
-              <div className="relative">
-                <input
-                  {...register("password")}
-                  type={showPassword ? "text" : "password"}
-                  className="w-full px-4 py-3 bg-[#F9F7F6] border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-900/20 transition-all placeholder:text-gray-400 text-sm pr-10"
-                  placeholder="Password"
-                />
-                <button 
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              {errors.password && <p className="text-xs text-red-600 ml-1 mt-1">{errors.password.message}</p>}
-            </div>
-
-            {/* Confirm Password */}
-            <div className="space-y-1.5">
-              <label className="block text-sm text-gray-800">Confirm Password</label>
-              <div className="relative">
-                <input
-                  {...register("confirmPassword")}
-                  type={showConfirmPassword ? "text" : "password"}
-                  className="w-full px-4 py-3 bg-[#F9F7F6] border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-900/20 transition-all placeholder:text-gray-400 text-sm pr-10"
-                  placeholder="Confirm"
-                />
-                <button 
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              {errors.confirmPassword && <p className="text-xs text-red-600 ml-1 mt-1">{errors.confirmPassword.message}</p>}
-            </div>
-          </div>
-
-          {/* Terms Checkbox */}
-          <div className="flex items-start space-x-3 pt-2">
-            <div className="flex items-center h-5 mt-0.5">
-              <input
-                {...register("agree")}
-                type="checkbox"
-                className="w-4 h-4 rounded border-gray-300 text-brand-900 focus:ring-brand-900"
-              />
-            </div>
-            <label className="text-xs text-gray-600 leading-relaxed">
-              I agree to the <Link href="#" className="text-brand-900 hover:underline">Terms of Service</Link>, <Link href="#" className="text-brand-900 hover:underline">Privacy Policy</Link>, and <Link href="#" className="text-brand-900 hover:underline">Community Standards</Link>.
-            </label>
-          </div>
-          {errors.agree && <p className="text-xs text-red-600 ml-7 -mt-2">{errors.agree.message}</p>}
 
           <div className="pt-2">
             <button
               type="submit"
-              disabled={signUp.isPending}
+              disabled={registerStep1.isPending}
               className="w-full flex justify-center py-4 px-4 rounded-xl text-sm font-medium text-white bg-[#8B4253] hover:bg-[#7a3847] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-900 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
-              {signUp.isPending ? "Sending OTP..." : "Create Free Profile"}
+              {registerStep1.isPending ? "Sending OTP..." : "Continue"}
             </button>
           </div>
 
@@ -275,7 +288,7 @@ export default function RegisterPage() {
 
           <button
             type="button"
-            onClick={() => handleGoogleLogin()}
+            onClick={() => loginGoogle()}
             className="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-xl text-sm font-medium text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-200 transition-all"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -287,33 +300,125 @@ export default function RegisterPage() {
             Google
           </button>
         </form>
-      ) : (
-        <form onSubmit={onVerifyOtp} className="space-y-6">
+      )}
+
+      {/* STEP 2: VERIFY OTP */}
+      {step === 2 && (
+        <form onSubmit={onVerifyOtp} className="space-y-6" data-reveal-group>
           <div className="space-y-2">
             <label className="block text-sm text-gray-800 text-center font-medium">Enter 6-digit OTP</label>
             <input
               type="text"
               value={otp}
-              onChange={(e) => setOtp(e.target.value)}
+              onChange={handleOtpChange}
               maxLength={6}
               className="w-full px-4 py-4 bg-[#F9F7F6] border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-900/20 transition-all placeholder:text-gray-400 text-center text-2xl tracking-widest font-mono"
               placeholder="------"
             />
+            <div className="text-center mt-2">
+              {timeLeft > 0 ? (
+                <p className="text-sm text-gray-500">Resend OTP in {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</p>
+              ) : (
+                <button type="button" onClick={resendOtp} className="text-sm text-brand-900 hover:underline">
+                  Resend OTP
+                </button>
+              )}
+            </div>
           </div>
+          
           <button
             type="submit"
-            disabled={isVerifying || otp.length !== 6}
+            disabled={registerStep2.isPending || otp.length !== 6}
             className="w-full flex justify-center py-4 px-4 rounded-xl text-sm font-medium text-white bg-[#8B4253] hover:bg-[#7a3847] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-900 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
-            {isVerifying ? "Verifying..." : "Verify & Continue"}
+            {registerStep2.isPending ? "Verifying..." : "Verify & Continue"}
           </button>
+          
           <button
             type="button"
-            onClick={() => setStep(1)}
+            onClick={() => {
+              sessionStorage.removeItem("nira_reg_step");
+              sessionStorage.removeItem("nira_reg_email");
+              setStep(1); 
+              setOtp(""); 
+              setError(null); 
+            }}
             className="w-full text-center text-sm text-brand-900 hover:underline mt-2"
           >
             Wrong email? Go back
           </button>
+        </form>
+      )}
+
+      {/* STEP 3: SECURITY (PASSWORD & TERMS) */}
+      {step === 3 && (
+        <form onSubmit={handlePassSubmit(onPasswordSubmit)} className="space-y-5" data-reveal-group>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="block text-sm text-gray-800">Password</label>
+              <div className="relative">
+                <input
+                  {...registerPass("password")}
+                  type={showPassword ? "text" : "password"}
+                  className="w-full px-4 py-3 bg-[#F9F7F6] border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-900/20 transition-all placeholder:text-gray-400 text-sm pr-10"
+                  placeholder="Password"
+                />
+                <button 
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {passErrors.password && <p className="text-xs text-red-600 ml-1 mt-1">{passErrors.password.message}</p>}
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-sm text-gray-800">Confirm Password</label>
+              <div className="relative">
+                <input
+                  {...registerPass("confirmPassword")}
+                  type={showConfirmPassword ? "text" : "password"}
+                  className="w-full px-4 py-3 bg-[#F9F7F6] border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-900/20 transition-all placeholder:text-gray-400 text-sm pr-10"
+                  placeholder="Confirm"
+                />
+                <button 
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {passErrors.confirmPassword && <p className="text-xs text-red-600 ml-1 mt-1">{passErrors.confirmPassword.message}</p>}
+            </div>
+          </div>
+
+          {/* Terms Checkbox */}
+          <div className="flex items-start space-x-3 pt-2">
+            <div className="flex items-center h-5 mt-0.5">
+              <input
+                {...registerPass("agree")}
+                type="checkbox"
+                className="w-4 h-4 rounded border-gray-300 text-brand-900 focus:ring-brand-900"
+              />
+            </div>
+            <label className="text-xs text-gray-600 leading-relaxed">
+              I agree to the <Link href="#" className="text-brand-900 hover:underline">Terms of Service</Link>, <Link href="#" className="text-brand-900 hover:underline">Privacy Policy</Link>, and <Link href="#" className="text-brand-900 hover:underline">Community Standards</Link>.
+            </label>
+          </div>
+          {passErrors.agree && <p className="text-xs text-red-600 ml-7 -mt-2">{passErrors.agree.message}</p>}
+
+          <div className="pt-2">
+            <button
+              type="submit"
+              disabled={registerStep3.isPending}
+              className="w-full flex justify-center py-4 px-4 rounded-xl text-sm font-medium text-white bg-[#8B4253] hover:bg-[#7a3847] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-900 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              {registerStep3.isPending ? "Creating Profile..." : "Create Free Profile"}
+            </button>
+          </div>
         </form>
       )}
 
@@ -328,8 +433,3 @@ export default function RegisterPage() {
     </div>
   );
 }
-
-
-
-
-
