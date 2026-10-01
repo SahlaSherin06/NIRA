@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSession } from "@/features/auth/api/authqueries";
 import {
   ShieldCheck, 
   Lock, 
@@ -21,7 +22,13 @@ import {
 import { LandingNavbar } from "@/components/layout/LandingNavbar";
 import { LandingFooter } from "@/components/layout/LandingFooter";
 
+/**
+ * Component: LandingPage
+ * Renders the UI and handles the internal logic for the Landing Page.
+ */
 export default function LandingPage() {
+  const { data: session } = useSession();
+
   const scrollTo = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
     e.preventDefault();
     const element = document.getElementById(id);
@@ -56,9 +63,15 @@ export default function LandingPage() {
             </p>
 
             <div data-reveal="fade" className="flex items-center space-x-4 pt-4">
-              <Link href="/register" className="px-8 py-3.5 rounded-full bg-brand-900 text-white font-medium hover:bg-brand-800 transition shadow-lg shadow-brand-900/20 hover:-translate-y-1 transform">
-                Create Profile
-              </Link>
+              {session ? (
+                <Link href="/home" className="px-8 py-3.5 rounded-full bg-brand-900 text-white font-medium hover:bg-brand-800 transition shadow-lg shadow-brand-900/20 hover:-translate-y-1 transform">
+                  Go to Dashboard
+                </Link>
+              ) : (
+                <Link href="/register" className="px-8 py-3.5 rounded-full bg-brand-900 text-white font-medium hover:bg-brand-800 transition shadow-lg shadow-brand-900/20 hover:-translate-y-1 transform">
+                  Create Profile
+                </Link>
+              )}
               <a href="#how-it-works" onClick={(e) => scrollTo(e, 'how-it-works')} className="px-8 py-3.5 rounded-full bg-white border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition">
                 How NIRA Works
               </a>
@@ -240,9 +253,15 @@ export default function LandingPage() {
               Join thousands of singles who are finding meaningful, lifelong connections in a secure and trusted community.
             </p>
             <div data-reveal="fade">
-              <Link href="/register" className="inline-block px-10 py-4 bg-white text-brand-900 font-bold rounded-full hover:bg-cream transition shadow-xl hover:-translate-y-1">
-                Create Your Profile &rarr;
-              </Link>
+              {session ? (
+                <Link href="/home" className="inline-block px-10 py-4 bg-white text-brand-900 font-bold rounded-full hover:bg-cream transition shadow-xl hover:-translate-y-1">
+                  Go to Dashboard &rarr;
+                </Link>
+              ) : (
+                <Link href="/register" className="inline-block px-10 py-4 bg-white text-brand-900 font-bold rounded-full hover:bg-cream transition shadow-xl hover:-translate-y-1">
+                  Create Your Profile &rarr;
+                </Link>
+              )}
             </div>
           </div>
         </section>

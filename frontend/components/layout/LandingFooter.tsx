@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 
+/**
+ * Component: LandingFooter
+ * Renders the UI and handles the internal logic for the Landing Footer.
+ */
 export function LandingFooter() {
   const scrollTo = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
     e.preventDefault();

@@ -14,11 +14,19 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+/**
+ * Function: metadata
+ * Executes the core operations and logic for metadata.
+ */
 export const metadata: Metadata = {
   title: "NIRA - Premium Matrimony",
   description: "A modern, inclusive matrimony platform built for serious connections.",
 };
 
+/**
+ * Component: RootLayout
+ * Renders the UI and handles the internal logic for the Root Layout.
+ */
 export default function RootLayout({
   children,
 }: Readonly<{

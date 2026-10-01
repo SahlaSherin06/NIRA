@@ -1,4 +1,4 @@
-﻿import express from "express";
+import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -6,7 +6,9 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import { connectDB } from "./config/db";
-import authRoutes from "./routes/authRoutes";
+import authRoutes from "./modules/auth/routes/authRoutes";
+import profileRoutes from "./modules/profile/routes/profileRoutes";
+import feedRoutes from "./modules/feed/routes/feedRoutes";
 
 const app = express();
 
@@ -21,7 +23,8 @@ app.use(
   })
 );
 
-app.use(express.json());
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(cookieParser());
 
 // Connect to MongoDB
@@ -29,6 +32,9 @@ connectDB();
 
 // Mount API Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/profile", profileRoutes);
+app.use("/api/feed", feedRoutes);
+app.use("/api/notifications", require("./modules/notifications/routes/notificationRoutes").default);
 
 app.get("/", (_req, res) => {
   res.json({

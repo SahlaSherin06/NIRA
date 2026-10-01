@@ -1,29 +1,9 @@
-﻿import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { AuthLayout } from "@/features/auth/components/AuthLayout";
 
-export default function AuthLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="min-h-screen flex flex-col bg-cream font-sans selection:bg-brand-100 selection:text-brand-900">
-      <header className="w-full p-6 absolute top-0 left-0 flex justify-between items-center">
-        <Link 
-          href="/" 
-          className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-brand-900 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Home
-        </Link>
-      </header>
-      
-      <div className="flex-1 flex flex-col items-center justify-center min-h-screen py-16 px-4">
-        <div className="w-full max-w-md">
-          {children}
-        </div>
-      </div>
-    </div>
-  );
+/**
+ * Component: Layout
+ * Renders the UI and handles the internal logic for the Layout.
+ */
+export default function Layout({ children }: { children: React.ReactNode }) {
+  return <AuthLayout>{children}</AuthLayout>;
 }
-

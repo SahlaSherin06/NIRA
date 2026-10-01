@@ -1,7 +1,7 @@
-﻿import jwt from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import { Response } from "express";
 import mongoose from "mongoose";
-import { Session } from "../models/Session";
+import { Session } from "../modules/auth/models/Session";
 
 const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || "access_secret";
 const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "refresh_secret";
