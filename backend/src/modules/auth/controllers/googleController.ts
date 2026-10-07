@@ -1,4 +1,5 @@
-import { Request, Response } from "express";
+import { asyncHandler } from "../../../utils/asyncHandler";
+import { Request, Response , NextFunction } from "express";
 import { User } from "../models/User";
 import { Account } from "../models/Account";
 import { generateTokens } from "../../../utils/jwtUtils";
@@ -8,14 +9,12 @@ import axios from "axios";
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "dummy_client_id";
 const client = new OAuth2Client(GOOGLE_CLIENT_ID);
 
-// 6. GOOGLE OAUTH
 /**
  * Function: googleLogin
  * Executes the core operations and logic for google login.
  */
-export const googleLogin = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { idToken, accessToken: googleAccessToken } = req.body;
+export const googleLogin = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const { idToken, accessToken: googleAccessToken } = req.body;
     
     if (!idToken && !googleAccessToken) {
       res.status(400).json({ message: "Google ID Token or Access Token is required" });
@@ -90,8 +89,5 @@ export const googleLogin = async (req: Request, res: Response): Promise<void> =>
         isOnboardingComplete: user.isOnboardingComplete
       },
     });
-  } catch (error) {
-    console.error("Google Auth Error:", error);
-    res.status(500).json({ message: "Failed to authenticate with Google: " + (error as any).message });
-  }
-};
+});
+

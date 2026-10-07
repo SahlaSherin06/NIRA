@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { submitOnboardingApi } from "./onboardingapi";
-import { authKeys } from "../../auth/api/authqueries";
+import { submitOnboardingApi } from "./onboarding.api";
+import { authKeys } from "../auth/auth.queries";
 
 export const useOnboarding = () => {
   const queryClient = useQueryClient();
@@ -17,3 +17,4 @@ export const useOnboarding = () => {
     submitOnboarding,
   };
 };
+

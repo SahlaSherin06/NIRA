@@ -101,4 +101,9 @@ const profileSchema = new Schema<IProfile>(
   { timestamps: true }
 );
 
+profileSchema.index({ city: 1 });
+profileSchema.index({ profession: 1 });
+profileSchema.index({ religion: 1 });
 export const Profile = (mongoose.models.Profile as mongoose.Model<IProfile>) || mongoose.model<IProfile>("Profile", profileSchema);
+
+

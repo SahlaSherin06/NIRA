@@ -1,7 +1,7 @@
 "use client";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "@/features/auth/api/authqueries";
+import { useSession } from "@/features/auth/auth.queries";
 import { OnboardingWizard } from "@/features/onboarding/components/OnboardingWizard";
 
 /**

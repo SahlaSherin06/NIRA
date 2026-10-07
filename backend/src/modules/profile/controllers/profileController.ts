@@ -1,4 +1,6 @@
-import { Request, Response } from "express";
+import { OnboardingDraft } from "../models/OnboardingDraft";
+import { asyncHandler } from "../../../utils/asyncHandler";
+import { Request, Response , NextFunction } from "express";
 import { Profile } from "../models/Profile";
 import { Preference } from "../models/Preference";
 import { User } from "../../auth/models/User";
@@ -34,9 +36,8 @@ const processPhotoUploads = async (mainPhoto: string, galleryPhotos: string[]): 
  * @param req - Express request containing the onboarding payload in req.body
  * @param res - Express response
  */
-export const completeOnboarding = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const userId = (req as any).user?.userId;
+export const completeOnboarding = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const userId = (req as any).user?.userId;
     if (!userId) {
       res.status(401).json({ message: "Unauthorized" });
       return;
@@ -133,20 +134,15 @@ export const completeOnboarding = async (req: Request, res: Response): Promise<v
       message: "Onboarding completed successfully!",
       isOnboardingComplete: true
     });
-  } catch (error) {
-    console.error("Complete Onboarding Error:", error);
-    res.status(500).json({ message: "Failed to save onboarding data" });
-  }
-};
+});
 
 // GET /api/profile/me
 /**
  * Function: getMyProfile
  * Executes the core operations and logic for get my profile.
  */
-export const getMyProfile = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const userId = (req as any).user?.userId;
+export const getMyProfile = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const userId = (req as any).user?.userId;
     if (!userId) {
       res.status(401).json({ message: "Unauthorized" });
       return;
@@ -166,20 +162,15 @@ export const getMyProfile = async (req: Request, res: Response): Promise<void> =
       profile,
       preferences
     });
-  } catch (error) {
-    console.error("Get Profile Error:", error);
-    res.status(500).json({ message: "Failed to fetch profile" });
-  }
-};
+});
 
 // PUT /api/profile/me
 /**
  * Function: updateMyProfile
  * Executes the core operations and logic for update my profile.
  */
-export const updateMyProfile = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const userId = (req as any).user?.userId;
+export const updateMyProfile = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const userId = (req as any).user?.userId;
     if (!userId) {
       res.status(401).json({ message: "Unauthorized" });
       return;
@@ -205,9 +196,52 @@ export const updateMyProfile = async (req: Request, res: Response): Promise<void
     }
 
     res.status(200).json({ message: "Profile updated successfully" });
-  } catch (error) {
-    console.error("Update Profile Error:", error);
-    res.status(500).json({ message: "Failed to update profile" });
+});
+
+
+
+
+
+/**
+ * Function: saveDraft
+ * Saves the current onboarding step and data for the user.
+ */
+export const saveDraft = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const userId = (req as any).user?.userId;
+  if (!userId) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
   }
-};
+
+  const { step, data } = req.body;
+  
+  await OnboardingDraft.findOneAndUpdate(
+    { userId },
+    { step, data },
+    { upsert: true, new: true }
+  );
+
+  res.status(200).json({ message: "Draft saved successfully" });
+});
+
+/**
+ * Function: getDraft
+ * Fetches the user's onboarding draft.
+ */
+export const getDraft = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const userId = (req as any).user?.userId;
+  if (!userId) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
+
+  const draft = await OnboardingDraft.findOne({ userId });
+  if (!draft) {
+    res.status(404).json({ message: "No draft found" });
+    return;
+  }
+
+  res.status(200).json(draft);
+});
+
 

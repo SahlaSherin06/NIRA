@@ -16,10 +16,10 @@ export function FloatingActions({ onPass, onLike, disabled, className }: Floatin
       <button
         onClick={onPass}
         disabled={disabled}
-        className="pointer-events-auto w-12 h-12 md:w-14 md:h-14 rounded-full bg-white shadow-2xl flex items-center justify-center text-gray-400 hover:text-red-500 hover:scale-110 active:scale-95 transition-all disabled:opacity-50 border border-gray-100 group"
+        className="pointer-events-auto w-12 h-12 md:w-14 md:h-14 rounded-full bg-gray-800 shadow-[0_10px_30px_rgba(31,41,55,0.4)] flex items-center justify-center text-white hover:bg-gray-900 hover:scale-110 active:scale-95 transition-all disabled:opacity-50 border-2 border-gray-600 group"
         aria-label="Pass"
       >
-        <X className="w-6 h-6 md:w-7 md:h-7 group-hover:drop-shadow-[0_0_8px_rgba(239,68,68,0.5)] transition-all" strokeWidth={3} />
+        <X className="w-6 h-6 md:w-7 md:h-7 group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.4)] transition-all" strokeWidth={3} />
       </button>
 
       {/* Like / Tick Button (Right Side of Card) */}

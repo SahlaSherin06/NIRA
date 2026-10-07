@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { useUpdateMyProfile } from "../api/profilequeries";
-import { MyProfileResponse } from "../api/profileapi";
+import { useUpdateMyProfile } from "../profile.queries";
+import { MyProfileResponse } from "../profile.api";
 import { X, Check, Camera, Image as ImageIcon, User, Briefcase, Heart, Filter } from "lucide-react";
 
 interface EditProfileModalProps {

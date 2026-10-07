@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { useMatchesData, useAcceptInterest, useRemoveInterest, useReportInterest } from "../api/matchesqueries";
-import { MatchProfile } from "../api/matchesapi";
+import Link from "next/link";
+import { useMatchesData, useAcceptInterest, useRemoveInterest, useReportInterest } from "../matches.queries";
+import { MatchProfile } from "../matches.api";
 import { MessageCircle, Check, MoreHorizontal, ShieldCheck, Heart } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -35,7 +36,7 @@ const NewMatchesCarousel = ({ profiles }: { profiles: MatchProfile[] }) => {
   );
 };
 
-const MatchCard = ({ profile, type }: { profile: MatchProfile, type: 'mutual' | 'received' | 'sent' }) => {
+const MatchCard = React.memo(({ profile, type }: { profile: MatchProfile, type: 'mutual' | 'received' | 'sent' }) => {
   const { mutate: acceptInterest, isPending } = useAcceptInterest();
   const { mutate: removeInterest, isPending: isRemoving } = useRemoveInterest();
   const { mutate: reportInterest, isPending: isReporting } = useReportInterest();
@@ -101,10 +102,10 @@ const MatchCard = ({ profile, type }: { profile: MatchProfile, type: 'mutual' | 
 
         <div className="mt-auto flex space-x-3 pt-2">
           {type === 'mutual' && (
-            <button className="flex-1 bg-brand-900 hover:bg-brand-800 text-white py-3 rounded-2xl text-sm font-bold flex items-center justify-center transition-all shadow-md hover:shadow-xl hover:-translate-y-0.5">
+            <Link href={`/messages?user=${profile._id}`} className="flex-1 bg-brand-900 hover:bg-brand-800 text-white py-3 rounded-2xl text-sm font-bold flex items-center justify-center transition-all shadow-md hover:shadow-xl hover:-translate-y-0.5">
               <MessageCircle className="w-4 h-4 mr-2" />
               Chat Now
-            </button>
+            </Link>
           )}
 
           {type === 'received' && (
@@ -196,7 +197,7 @@ const MatchCard = ({ profile, type }: { profile: MatchProfile, type: 'mutual' | 
       )}
     </div>
   );
-};
+});
 
 /**
  * Component: MatchesFeed
@@ -305,3 +306,4 @@ export function MatchesFeed() {
     </div>
   );
 }
+

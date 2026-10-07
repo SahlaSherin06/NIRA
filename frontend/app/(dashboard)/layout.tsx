@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "@/features/auth/api/authqueries";
+import { useSession } from "@/features/auth/auth.queries";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { DashboardNavbar } from "@/components/layout/DashboardNavbar";

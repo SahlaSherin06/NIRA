@@ -45,4 +45,6 @@ const userSchema: Schema = new Schema(
   { timestamps: true }
 );
 
+userSchema.index({ gender: 1 });
 export const User = (mongoose.models.User as mongoose.Model<IUser>) || mongoose.model<IUser>("User", userSchema);
+

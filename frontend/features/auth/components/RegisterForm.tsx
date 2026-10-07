@@ -7,7 +7,7 @@ import * as z from "zod";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useSession } from "@/features/auth/api/authqueries";
+import { useSession } from "@/features/auth/auth.queries";
 import { useGoogleLogin } from "@react-oauth/google";
 
 const createdForOptions = ["Myself", "Son", "Daughter", "Brother", "Sister", "Friend", "Relative"];

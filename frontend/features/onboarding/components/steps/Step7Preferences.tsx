@@ -166,9 +166,7 @@ export function Step7Preferences({ data, onNext, onBack }: Props) {
       </div>
 
       <div className="space-y-6">
-        
-        {/* Core & Basic */}
-        <div className="bg-white/40 backdrop-blur-sm p-6 sm:p-8 rounded-3xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-8 gsap-item">
+<div className="bg-white/40 backdrop-blur-sm p-6 sm:p-8 rounded-3xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-8 gsap-item">
           <div>
             <label className="block text-sm font-bold text-gray-800 mb-4 ml-1 flex items-center gap-2">
               <UserPlus className="w-5 h-5 text-brand-900" /> Age & Height
@@ -192,9 +190,7 @@ export function Step7Preferences({ data, onNext, onBack }: Props) {
             {renderMultiSelect("prefMaritalStatus", maritalStatusOptions)}
           </div>
         </div>
-
-        {/* Background */}
-        <div className="bg-white/40 backdrop-blur-sm p-6 sm:p-8 rounded-3xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-8 gsap-item">
+<div className="bg-white/40 backdrop-blur-sm p-6 sm:p-8 rounded-3xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-8 gsap-item">
           <div>
             <label className="block text-sm font-bold text-gray-800 mb-4 ml-1 flex items-center gap-2">
               <MapPin className="w-5 h-5 text-brand-900" /> Location Preference
@@ -216,9 +212,7 @@ export function Step7Preferences({ data, onNext, onBack }: Props) {
             {renderSingleSelect("prefProfession", professionOptions)}
           </div>
         </div>
-
-        {/* Lifestyle & Values */}
-        <div className="bg-white/40 backdrop-blur-sm p-6 sm:p-8 rounded-3xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-8 gsap-item">
+<div className="bg-white/40 backdrop-blur-sm p-6 sm:p-8 rounded-3xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-8 gsap-item">
           <div>
             <label className="block text-sm font-bold text-gray-800 mb-4 ml-1 flex items-center gap-2">
               <Coffee className="w-5 h-5 text-brand-900" /> Lifestyle Compatability
@@ -269,4 +263,5 @@ export function Step7Preferences({ data, onNext, onBack }: Props) {
     </form>
   );
 }
+
 

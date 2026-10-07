@@ -40,3 +40,5 @@ const preferenceSchema = new Schema<IPreference>(
 );
 
 export const Preference = (mongoose.models.Preference as mongoose.Model<IPreference>) || mongoose.model<IPreference>("Preference", preferenceSchema);
+
+

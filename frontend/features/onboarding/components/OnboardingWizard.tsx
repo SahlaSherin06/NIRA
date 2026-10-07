@@ -2,7 +2,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { OnboardingData } from "../types";
-import { useOnboarding } from "../api/onboardingqueries";
+import { useOnboarding } from "../onboarding.queries";
+import { saveDraftApi, getDraftApi } from "../onboarding.api";
 import { Step1Identity } from "./steps/Step1Identity";
 import { Step2Roots } from "./steps/Step2Roots";
 import { Step3Education } from "./steps/Step3Education";

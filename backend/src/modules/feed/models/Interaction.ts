@@ -29,3 +29,4 @@ const InteractionSchema = new Schema<IInteraction>(
 InteractionSchema.index({ actorId: 1, targetId: 1 }, { unique: true });
 
 export const Interaction = (mongoose.models.Interaction as mongoose.Model<IInteraction>) || mongoose.model<IInteraction>("Interaction", InteractionSchema);
+

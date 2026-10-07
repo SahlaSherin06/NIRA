@@ -6,6 +6,12 @@ export interface NotificationData {
   message: string;
   isRead: boolean;
   createdAt: string;
+  relatedUser?: {
+    _id: string;
+    name: string;
+    mainPhoto?: string;
+  };
+  // Legacy field just in case
   relatedUserId?: {
     _id: string;
     name: string;
@@ -28,3 +34,4 @@ export const getNotificationsApi = async (): Promise<NotificationData[]> => {
 export const markNotificationsReadApi = async (): Promise<void> => {
   await api.put("/notifications/read");
 };
+

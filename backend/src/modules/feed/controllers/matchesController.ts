@@ -1,4 +1,5 @@
-import { Request, Response } from "express";
+import { asyncHandler } from "../../../utils/asyncHandler";
+import { Request, Response , NextFunction } from "express";
 import mongoose from "mongoose";
 import { User } from "../../auth/models/User";
 import { Interaction } from "../models/Interaction";
@@ -7,23 +8,20 @@ import { Interaction } from "../models/Interaction";
  * Function: getMatchesData
  * Executes the core operations and logic for get matches data.
  */
-export const getMatchesData = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const userId = (req as any).user?.userId;
+export const getMatchesData = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const userId = (req as any).user?.userId;
     if (!userId) {
       res.status(401).json({ message: "Unauthorized" });
       return;
     }
 
-    // 1. Get all interactions involving the current user
-    const sentInteractions = await Interaction.find({ actorId: userId, action: "like" });
+        const sentInteractions = await Interaction.find({ actorId: userId, action: "like" });
     const receivedInteractions = await Interaction.find({ targetId: userId, action: "like" });
 
     const sentTargetIds = sentInteractions.map(i => i.targetId.toString());
     const receivedActorIds = receivedInteractions.map(i => i.actorId.toString());
 
-    // 2. Classify IDs
-    const mutualMatchIds = sentTargetIds.filter(id => receivedActorIds.includes(id));
+        const mutualMatchIds = sentTargetIds.filter(id => receivedActorIds.includes(id));
     const pureSentIds = sentTargetIds.filter(id => !receivedActorIds.includes(id));
     const pureReceivedIds = receivedActorIds.filter(id => !sentTargetIds.includes(id));
 
@@ -36,8 +34,7 @@ export const getMatchesData = async (req: Request, res: Response): Promise<void>
     
     const finalReceivedIds = pureReceivedIds.filter(id => !negativeIds.includes(id));
 
-    // 3. Helper to fetch populated user details
-    const fetchPopulatedUsers = async (ids: string[]) => {
+        const fetchPopulatedUsers = async (ids: string[]) => {
       const objectIds = ids.map(id => new mongoose.Types.ObjectId(id));
       const pipeline = [
         { $match: { _id: { $in: objectIds } } },
@@ -62,8 +59,7 @@ export const getMatchesData = async (req: Request, res: Response): Promise<void>
       }));
     };
 
-    // 4. Execute concurrently
-    const [mutualMatches, interestsReceived, interestsSent] = await Promise.all([
+        const [mutualMatches, interestsReceived, interestsSent] = await Promise.all([
       fetchPopulatedUsers(mutualMatchIds),
       fetchPopulatedUsers(finalReceivedIds),
       fetchPopulatedUsers(pureSentIds)
@@ -74,8 +70,5 @@ export const getMatchesData = async (req: Request, res: Response): Promise<void>
       interestsReceived,
       interestsSent
     });
-  } catch (error) {
-    console.error("Get Matches Data Error:", error);
-    res.status(500).json({ message: "Failed to fetch matches data" });
-  }
-};
+});
+

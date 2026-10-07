@@ -1,5 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "../../../lib/axios";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "../../lib/axios";
 
 // TYPES
 export interface Recommendation {
@@ -56,9 +56,9 @@ export const feedKeys = {
  * Function: getRecommendationsApi
  * Executes the core operations and logic for get recommendations api.
  */
-export const getRecommendationsApi = async (): Promise<Recommendation[]> => {
-  const response = await api.get("/feed/recommendations");
-  return response.data.recommendations;
+export const getRecommendationsApi = async (page = 1): Promise<{ recommendations: Recommendation[], nextPage: number | null }> => {
+  const response = await api.get(`/feed/recommendations?page=${page}&limit=10`);
+  return response.data;
 };
 
 /**
@@ -76,10 +76,12 @@ export const interactApi = async (data: { targetId: string; action: "like" | "pa
  * Executes the core operations and logic for use recommendations.
  */
 export function useRecommendations() {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: feedKeys.recommendations(),
-    queryFn: getRecommendationsApi,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    queryFn: ({ pageParam = 1 }) => getRecommendationsApi(pageParam),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => lastPage.nextPage,
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -96,5 +98,36 @@ export function useInteract() {
       // We don't invalidate the whole feed immediately to prevent layout jumps,
       // The local state will shift the queue, but we could refetch if the queue is low.
     },
+  });
+}
+
+
+export interface ActivityLog {
+  _id: string;
+  action: "like" | "pass" | "block" | "favorite" | "report";
+  createdAt: string;
+  reason?: string;
+  targetUser: {
+    _id: string;
+    name: string;
+  };
+  targetProfile?: {
+    mainPhoto?: string;
+    city?: string;
+    profession?: string;
+  };
+}
+
+export const getActivityLogsApi = async (page = 1): Promise<{ logs: ActivityLog[], nextPage: number | null }> => {
+  const response = await api.get(`/feed/activity?page=${page}&limit=20`);
+  return response.data;
+};
+
+export function useActivityLogs() {
+  return useInfiniteQuery({
+    queryKey: [...feedKeys.all, "activity"],
+    queryFn: ({ pageParam = 1 }) => getActivityLogsApi(pageParam),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => lastPage.nextPage,
   });
 }

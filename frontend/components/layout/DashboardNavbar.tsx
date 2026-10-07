@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Heart, Search, MessageCircle, Bell, User, Globe, LogOut, Compass } from "lucide-react";
-import { useSession } from "@/features/auth/api/authqueries";
-import { useNotifications } from "@/features/notifications/api/notificationqueries";
+import { useSession } from "@/features/auth/auth.queries";
+import { useNotifications } from "@/features/notifications/notification.queries";
+import { useMyProfile } from "@/features/profile/profile.queries";
 
 /**
  * Component: DashboardNavbar
@@ -15,6 +16,7 @@ export function DashboardNavbar() {
   const router = useRouter();
   const { signOut } = useSession();
   const { data: notifications } = useNotifications();
+  const { data: myProfile } = useMyProfile();
 
   const hasUnread = notifications?.some(n => !n.isRead);
 
@@ -85,10 +87,16 @@ export function DashboardNavbar() {
             
             <Link 
               href="/profile" 
-              className="p-2.5 rounded-full text-gray-400 bg-white hover:text-brand-900 hover:bg-brand-50 transition-colors shadow-sm border border-gray-100"
+              className="rounded-full text-gray-400 bg-white hover:text-brand-900 hover:bg-brand-50 transition-colors shadow-sm border border-gray-200 overflow-hidden flex items-center justify-center p-1"
               title="My Profile"
             >
-              <User className="w-5 h-5" />
+              {myProfile?.profile?.mainPhoto ? (
+                <img src={myProfile.profile.mainPhoto} alt="My Profile" className="w-7 h-7 rounded-full object-cover" />
+              ) : (
+                <div className="w-7 h-7 flex items-center justify-center bg-gray-100 rounded-full">
+                  <User className="w-4 h-4 text-gray-500" />
+                </div>
+              )}
             </Link>
 
             <div className="h-8 w-px bg-gray-200 hidden md:block mx-2"></div>

@@ -1,14 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ExploreFeed } from "@/features/explore/components/ExploreFeed";
-import { ProfileCard } from "@/features/feed/components/ProfileCard";
-import { FloatingActions } from "@/features/feed/components/FloatingActions";
-import { Recommendation, useInteract } from "@/features/feed/api/feedapi";
-import { exploreKeys } from "@/features/explore/api/explorequeries";
-import { ExploreResponse } from "@/features/explore/api/exploreapi";
+import { Recommendation, useInteract } from "@/features/feed/feed.api";
+import { exploreKeys } from "@/features/explore/explore.queries";
+import { ExploreResponse } from "@/features/explore/explore.api";
+
+// Dynamically import heavy components that are only needed when a modal opens
+const ProfileCard = dynamic(() => import("@/features/feed/components/ProfileCard").then(mod => mod.ProfileCard), { ssr: false });
+const FloatingActions = dynamic(() => import("@/features/feed/components/FloatingActions").then(mod => mod.FloatingActions), { ssr: false });
 
 /**
  * Component: ExplorePage
@@ -18,16 +21,13 @@ export default function ExplorePage() {
   const queryClient = useQueryClient();
   const interactMutation = useInteract();
 
-  // Selected Profile for Modal View
   const [selectedProfile, setSelectedProfile] = useState<Recommendation | null>(null);
 
-  const handleInteract = (action: "like" | "pass" | "block" | "report", reason?: string) => {
+  const handleInteract = useCallback((action: "like" | "pass" | "block" | "report", reason?: string) => {
     if (!selectedProfile || interactMutation.isPending) return;
 
-    // Mutate backend
     interactMutation.mutate({ targetId: selectedProfile._id, action, reason });
 
-    // Optimistically update the UI to remove this profile from explore lists
     queryClient.setQueryData(exploreKeys.all, (oldData: ExploreResponse | undefined) => {
       if (!oldData) return oldData;
       return {
@@ -37,9 +37,8 @@ export default function ExplorePage() {
       };
     });
 
-    // Close the modal
     setSelectedProfile(null);
-  };
+  }, [selectedProfile, interactMutation, queryClient]);
 
   return (
     <div className="w-full max-w-7xl mx-auto flex flex-col relative">

@@ -1,5 +1,5 @@
 import { api } from "@/lib/axios";
-import { Recommendation } from "../../feed/api/feedapi";
+import { Recommendation } from "../feed/feed.api";
 
 export interface MatchProfile extends Recommendation {
   matchedAt: string; // ISO date string
@@ -39,3 +39,4 @@ export const removeInterest = async (targetId: string) => {
   const res = await api.delete(`/feed/interact/${targetId}`);
   return res.data;
 };
+

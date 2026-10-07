@@ -1,4 +1,5 @@
-import { Request, Response } from "express";
+import { asyncHandler } from "../../../utils/asyncHandler";
+import { Request, Response , NextFunction } from "express";
 import { User } from "../../auth/models/User";
 import { Preference } from "../../profile/models/Preference";
 import { Interaction } from "../models/Interaction";
@@ -7,9 +8,8 @@ import { Interaction } from "../models/Interaction";
  * Function: getExploreData
  * Executes the core operations and logic for get explore data.
  */
-export const getExploreData = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const userId = (req as any).user?.userId;
+export const getExploreData = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const userId = (req as any).user?.userId;
     if (!userId) {
       res.status(401).json({ message: "Unauthorized" });
       return;
@@ -21,8 +21,7 @@ export const getExploreData = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    // 1. Get current user's preferences
-    const prefs = await Preference.findOne({ userId });
+        const prefs = await Preference.findOne({ userId });
 
     const userGender = currentUser.gender?.toLowerCase() || 'male';
     const targetGender = userGender === 'male' ? 'female' : 'male';
@@ -32,8 +31,7 @@ export const getExploreData = async (req: Request, res: Response): Promise<void>
     const excludedIds = pastInteractions.map(i => i.targetId);
     excludedIds.push(currentUser._id);
 
-    // 2. Build Base Match
-    const baseMatch: any = {
+        const baseMatch: any = {
       gender: { $regex: new RegExp(`^${targetGender}$`, 'i') },
       isOnboardingComplete: true,
       _id: { $nin: excludedIds }
@@ -79,8 +77,12 @@ export const getExploreData = async (req: Request, res: Response): Promise<void>
     if (prefs?.prefSmoking && prefs.prefSmoking !== "Doesn't matter") scoreConditions.push({ $cond: [{ $eq: ["$profile.smoke", prefs.prefSmoking] }, 1, 0] });
     if (prefs?.prefDrinking && prefs.prefDrinking !== "Doesn't matter") scoreConditions.push({ $cond: [{ $eq: ["$profile.drink", prefs.prefDrinking] }, 1, 0] });
 
-    // 4. Helper to aggregate
-    const fetchProfiles = async (limit: number, secondarySort: any) => {
+            // Pagination parameters
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const skip = (page - 1) * limit;
+
+    const fetchProfiles = async (limitNum: number, secondarySort: any, applyPrefs: boolean = true) => {
       const pipeline: any[] = [
         { $match: baseMatch },
         {
@@ -91,26 +93,36 @@ export const getExploreData = async (req: Request, res: Response): Promise<void>
             as: "profile"
           }
         },
-        { $unwind: "$profile" },
-        { $match: dynamicFilter }
+        { $unwind: "$profile" }
       ];
 
+      // If applyPrefs is true, apply Age and Religion filters.
+      // If there's a text search (q), we always apply it regardless of applyPrefs.
+      if (q) {
+        pipeline.push({ $match: dynamicFilter });
+      } else if (applyPrefs && Object.keys(dynamicFilter).length > 0) {
+        pipeline.push({ $match: dynamicFilter });
+      }
+
       // Score and Sort
-      if (scoreConditions.length > 0) {
+      if (applyPrefs && scoreConditions.length > 0) {
         pipeline.push({ $addFields: { matchScore: { $add: scoreConditions } } });
-        // Since we can't cleanly $sample after sorting, we just sort by score, then secondary criteria
-        // Note: For $sample in completeBios, we'll just use { _id: -1 } as secondary to keep it simple
         pipeline.push({ $sort: { matchScore: -1, ...secondarySort } });
       } else {
+        // For Just Joined, we just sort directly by the secondarySort (which is { createdAt: -1 })
         pipeline.push({ $sort: secondarySort });
       }
 
-      pipeline.push({ $limit: limit });
+      pipeline.push({ $skip: skip });
+      pipeline.push({ $limit: limitNum + 1 });
       return User.aggregate(pipeline);
     };
 
-    // 5. Fetch the two sections
-    const completeBiosRaw = await fetchProfiles(20, { _id: 1 });
+    // Complete Bios uses preferences
+    const completeBiosRaw = await fetchProfiles(limit, { _id: 1 }, true);
+    const hasNextComplete = completeBiosRaw.length > limit;
+    if (hasNextComplete) completeBiosRaw.pop();
+
     const completeBios = completeBiosRaw.map(user => ({
       _id: user._id,
       name: user.name,
@@ -118,7 +130,11 @@ export const getExploreData = async (req: Request, res: Response): Promise<void>
       profile: user.profile
     }));
 
-    const justJoinedRaw = await fetchProfiles(20, { createdAt: -1 });
+    // Just Joined BYPASSES preferences (applyPrefs = false)
+    const justJoinedRaw = await fetchProfiles(limit, { createdAt: -1 }, false);
+    const hasNextJoined = justJoinedRaw.length > limit;
+    if (hasNextJoined) justJoinedRaw.pop();
+
     const justJoined = justJoinedRaw.map(user => ({
       _id: user._id,
       name: user.name,
@@ -126,9 +142,11 @@ export const getExploreData = async (req: Request, res: Response): Promise<void>
       profile: user.profile
     }));
 
-    res.status(200).json({ completeBios, justJoined });
-  } catch (error) {
-    console.error("Explore API Error:", error);
-    res.status(500).json({ message: "Failed to fetch explore data" });
-  }
-};
+    res.status(200).json({ 
+      completeBios, 
+      justJoined,
+      nextPage: (hasNextComplete || hasNextJoined) ? page + 1 : null
+    });
+});
+
+

@@ -1,27 +1,41 @@
 import React, { useState, useEffect } from "react";
-import { useRecommendations, useInteract, Recommendation } from "../api/feedapi";
+import { useRecommendations, useInteract, Recommendation } from "../feed.api";
 import { ProfileCard } from "./ProfileCard";
 import { FloatingActions } from "./FloatingActions";
 import { Heart } from "lucide-react";
 
 export function DiscoverFeed() {
-  const { data: recommendations, isLoading, isError } = useRecommendations();
+  const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } = useRecommendations();
   const interactMutation = useInteract();
   
   // Local queue of profiles to show
   const [queue, setQueue] = useState<Recommendation[]>([]);
+  const [loadedPages, setLoadedPages] = useState<number>(0);
+
   // Tracking if a card is animating out
   const [animatingOut, setAnimatingOut] = useState<"like" | "pass" | "block" | "report" | null>(null);
+  const [isEntering, setIsEntering] = useState(false);
 
   // Bottom scroll detection hooks (must be called unconditionally)
   const bottomRef = React.useRef<HTMLDivElement>(null);
   const [isAtBottom, setIsAtBottom] = React.useState(false);
 
+  // Append new pages to the queue
   useEffect(() => {
-    if (recommendations) {
-      setQueue(recommendations);
+    if (data && data.pages.length > loadedPages) {
+      const newPages = data.pages.slice(loadedPages);
+      const newProfiles = newPages.flatMap(p => p.recommendations);
+      setQueue(prev => [...prev, ...newProfiles]);
+      setLoadedPages(data.pages.length);
     }
-  }, [recommendations]);
+  }, [data, loadedPages]);
+
+  // Trigger fetchNextPage when queue gets low
+  useEffect(() => {
+    if (queue.length <= 3 && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [queue.length, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const currentProfile = queue[0];
 
@@ -35,6 +49,29 @@ export function DiscoverFeed() {
     if (bottomRef.current) observer.observe(bottomRef.current);
     return () => observer.disconnect();
   }, [currentProfile]); // re-run if profile changes
+
+  const handleInteract = React.useCallback(async (action: "like" | "pass" | "block" | "report", reason?: string) => {
+    if (animatingOut || interactMutation.isPending) return;
+    
+    setAnimatingOut(action);
+    
+    try {
+      // Record in backend
+      interactMutation.mutate({ targetId: currentProfile._id, action, reason });
+      
+      // Delay to allow CSS animation to play
+      setTimeout(() => {
+        setQueue((prev) => prev.slice(1));
+        setAnimatingOut(null);
+        setIsEntering(true);
+        setTimeout(() => setIsEntering(false), 50); // Small delay to allow DOM update before triggering CSS transition
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 300); // 300ms matches the CSS transition
+    } catch (err) {
+      console.error(err);
+      setAnimatingOut(null);
+    }
+  }, [animatingOut, interactMutation, currentProfile, isEntering]);
 
   if (isLoading) {
     return (
@@ -65,36 +102,18 @@ export function DiscoverFeed() {
     );
   }
 
-  const handleInteract = async (action: "like" | "pass" | "block" | "report", reason?: string) => {
-    if (animatingOut || interactMutation.isPending) return;
-    
-    setAnimatingOut(action);
-    
-    try {
-      // Record in backend
-      interactMutation.mutate({ targetId: currentProfile._id, action, reason });
-      
-      // Delay to allow CSS animation to play
-      setTimeout(() => {
-        setQueue((prev) => prev.slice(1));
-        setAnimatingOut(null);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }, 300); // 300ms matches the CSS transition
-    } catch (err) {
-      console.error(err);
-      setAnimatingOut(null);
-    }
-  };
-
-  return (
+    return (
     <div className="relative flex flex-col items-center justify-start min-h-screen w-full max-w-2xl mx-auto pt-8 pb-16 px-4 md:px-0">
-      <div 
-        className={`w-full relative transition-all duration-300 ease-in-out origin-bottom
-          ${animatingOut === 'like' ? 'translate-x-full rotate-12 opacity-0' : ''}
-          ${(animatingOut === 'pass' || animatingOut === 'block' || animatingOut === 'report') ? '-translate-x-full -rotate-12 opacity-0' : ''}
-        `}
-      >
-        <ProfileCard user={currentProfile} onAction={(action, reason) => handleInteract(action, reason)} />
+      <div className="w-full relative">
+        <div 
+          className={`w-full transition-all duration-500 ease-out origin-bottom animate-slide-up-fade
+            ${isEntering ? 'opacity-0' : 'opacity-100'}
+            ${animatingOut === 'like' ? 'translate-x-[120%] rotate-12 opacity-0 scale-95' : ''}
+            ${(animatingOut === 'pass' || animatingOut === 'block' || animatingOut === 'report') ? '-translate-x-[120%] -rotate-12 opacity-0 scale-95' : ''}
+          `}
+        >
+          <ProfileCard user={currentProfile} onAction={(action, reason) => handleInteract(action, reason)} />
+        </div>
         
         {/* Invisible marker to detect bottom of card */}
         <div ref={bottomRef} className="h-10 w-full absolute bottom-4 pointer-events-none" />
@@ -103,9 +122,10 @@ export function DiscoverFeed() {
           onLike={() => handleInteract("like")} 
           onPass={() => handleInteract("pass")}
           disabled={!!animatingOut || interactMutation.isPending}
-          className={isAtBottom ? "absolute bottom-6 left-0" : "fixed bottom-10 left-1/2 -translate-x-1/2 max-w-2xl"}
+          className={isAtBottom ? "absolute bottom-6 left-0" : "fixed bottom-10 left-1/2 -translate-x-1/2 max-w-2xl z-50"}
         />
       </div>
     </div>
   );
 }
+

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useSession } from "@/features/auth/api/authqueries";
+import { useSession } from "@/features/auth/auth.queries";
 import {
   ShieldCheck, 
   Lock, 

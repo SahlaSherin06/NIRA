@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getNotificationsApi, markNotificationsReadApi } from "./notificationapi";
+import { getNotificationsApi, markNotificationsReadApi } from "./notification.api";
 
 /**
  * Function: notificationKeys
@@ -35,3 +35,4 @@ export const useMarkNotificationsRead = () => {
     },
   });
 };
+

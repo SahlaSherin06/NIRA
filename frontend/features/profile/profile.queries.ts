@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchMyProfile, updateMyProfileApi } from "./profileapi";
+import { fetchMyProfile, updateMyProfileApi } from "./profile.api";
 
 /**
  * Function: profileKeys
@@ -33,3 +33,4 @@ export const useUpdateMyProfile = () => {
     },
   });
 };
+

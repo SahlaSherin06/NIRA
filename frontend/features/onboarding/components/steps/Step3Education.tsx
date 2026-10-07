@@ -119,9 +119,7 @@ export function Step3Education({ data, onNext, onBack }: Props) {
       </div>
 
       <div className="space-y-6">
-        
-        {/* Education Section */}
-        <div className="bg-white/40 backdrop-blur-sm p-6 sm:p-8 rounded-3xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-6 gsap-item">
+<div className="bg-white/40 backdrop-blur-sm p-6 sm:p-8 rounded-3xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-6 gsap-item">
           <div>
             <label className={labelClasses}>Highest Education Level</label>
             {wEducation !== "Other" ? (
@@ -145,9 +143,7 @@ export function Step3Education({ data, onNext, onBack }: Props) {
             )}
           </div>
         </div>
-
-        {/* Career Section */}
-        <div className="bg-white/40 backdrop-blur-sm p-6 sm:p-8 rounded-3xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-6 gsap-item">
+<div className="bg-white/40 backdrop-blur-sm p-6 sm:p-8 rounded-3xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-6 gsap-item">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className={labelClasses}>Current Profession</label>
@@ -199,4 +195,5 @@ export function Step3Education({ data, onNext, onBack }: Props) {
     </form>
   );
 }
+
 

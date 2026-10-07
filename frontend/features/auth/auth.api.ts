@@ -1,4 +1,4 @@
-import { api } from "../../../lib/axios";
+import { api } from "../../lib/axios";
 
 // Interceptor to automatically add the Access Token to headers
 api.interceptors.request.use((config) => {
@@ -110,5 +110,26 @@ export const logoutApi = async () => {
  */
 export const googleSignInApi = async (accessToken: string) => {
   const res = await api.post("/auth/google", { accessToken });
+  return res.data;
+};
+
+
+export const changePasswordApi = async (data: any) => {
+  const res = await api.put("/auth/change-password", data);
+  return res.data;
+};
+
+export const changeEmailApi = async (data: any) => {
+  const res = await api.put("/auth/change-email", data);
+  return res.data;
+};
+
+export const forgotPasswordApi = async (data: { email: string }) => {
+  const res = await api.post("/auth/forgot-password", data);
+  return res.data;
+};
+
+export const resetPasswordApi = async (data: { email: string; otp: string; newPassword: string }) => {
+  const res = await api.post("/auth/reset-password", data);
   return res.data;
 };

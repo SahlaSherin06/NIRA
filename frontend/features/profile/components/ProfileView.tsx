@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { useMyProfile, useUpdateMyProfile } from "../api/profilequeries";
-import { Settings, Edit3, ShieldCheck, MapPin, Briefcase, GraduationCap, Heart, Camera, Globe, Activity, Image as ImageIcon, Lock, Unlock, Plus, User } from "lucide-react";
+import { useMyProfile, useUpdateMyProfile } from "../profile.queries";
+import { Settings, Edit3, ShieldCheck, MapPin, Briefcase, GraduationCap, Heart, Camera, Globe, Activity, Image as ImageIcon, Lock, Unlock, Plus, User, ChevronRight } from "lucide-react";
 import { EditProfileModal } from "./EditProfileModal";
+import { SecuritySettingsModal } from "./SecuritySettingsModal";
+import Link from "next/link";
 
 /**
  * Component: ProfileView
@@ -13,7 +15,8 @@ export function ProfileView() {
   const { data, isLoading } = useMyProfile();
   const { mutate: updateProfile, isPending: isUpdating } = useUpdateMyProfile();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleGalleryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -100,9 +103,37 @@ export function ProfileView() {
                 <div>
                   <p className="text-sm font-bold text-gray-900">Privacy</p>
                   <p className="text-xs font-medium text-gray-500 mt-0.5">Public Profile</p>
+                  </div>
                 </div>
               </div>
-            </div>
+              
+              
+              <button 
+                onClick={() => setIsSecurityModalOpen(true)}
+                className="w-full flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100 shadow-sm hover:border-brand-200 transition-colors group"
+              >
+                <div className="flex items-center text-left">
+                  <ShieldCheck className="w-5 h-5 text-brand-900 mr-3 group-hover:scale-110 transition-transform" />
+                  <div>
+                    <p className="text-sm font-bold text-gray-900 group-hover:text-brand-900 transition-colors">Password & Security</p>
+                    <p className="text-xs font-medium text-gray-500 mt-0.5">Change Email and Password</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-brand-900 transition-colors" />
+              </button>
+
+                <Link href="/activity" className="flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100 shadow-sm hover:border-brand-300 transition-colors cursor-pointer block w-full">
+                <div className="flex items-center">
+                  <div className="w-8 h-8 rounded-full bg-brand-50 flex items-center justify-center mr-3">
+                    <Activity className="w-4 h-4 text-brand-900" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-gray-900 text-left">Activity Logs</p>
+                    <p className="text-xs font-medium text-gray-500 mt-0.5 text-left">View your likes, passes & history</p>
+                  </div>
+                </div>
+                <span className="px-4 py-1.5 bg-brand-50 text-brand-900 text-xs font-bold rounded-full hover:bg-brand-100 transition-colors inline-block">View</span>
+              </Link>
           </div>
         </div>
       </div>
@@ -309,6 +340,12 @@ export function ProfileView() {
           onClose={() => setIsEditModalOpen(false)}
         />
       )}
-    </div>
+      
+      
+    
+      {isSecurityModalOpen && (
+        <SecuritySettingsModal onClose={() => setIsSecurityModalOpen(false)} />
+      )}
+  </div>
   );
 }

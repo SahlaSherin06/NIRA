@@ -1,9 +1,10 @@
+import { changePasswordApi, changeEmailApi, forgotPasswordApi, resetPasswordApi } from "./auth.api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   getMeApi, loginStep1Api, loginStep2Api, loginStep3Api, 
   registerStep1Api, registerStep2Api, registerStep3Api, 
   logoutApi, googleSignInApi 
-} from "./authapi";
+} from "./auth.api";
 
 /**
  * Function: authKeys
@@ -104,4 +105,37 @@ export const useSession = () => {
     signOut: signOutMutation,
     signInWithGoogle: googleSignInMutation,
   };
+};
+
+
+export const useChangePassword = () => {
+  return useMutation({
+    mutationFn: changePasswordApi,
+  });
+};
+
+export const useChangeEmail = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: changeEmailApi,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: authKeys.session });
+    }
+  });
+};
+
+export const useForgotPassword = () => {
+  return useMutation({
+    mutationFn: forgotPasswordApi,
+  });
+};
+
+export const useResetPassword = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: resetPasswordApi,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: authKeys.session });
+    }
+  });
 };

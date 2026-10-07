@@ -122,9 +122,7 @@ export function Step8Photos({ data, onNext, onBack }: Props) {
       </div>
 
       <div className="space-y-6">
-        
-        {/* Main Photo Upload */}
-        <div className="bg-white/40 backdrop-blur-sm p-6 sm:p-8 rounded-3xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-5 gsap-item">
+<div className="bg-white/40 backdrop-blur-sm p-6 sm:p-8 rounded-3xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-5 gsap-item">
           <div className="flex justify-between items-center mb-2">
             <label className="block text-sm font-bold text-gray-800 ml-1 flex items-center gap-2">
               <Camera className="w-5 h-5 text-brand-900" /> Main Profile Photo
@@ -166,9 +164,7 @@ export function Step8Photos({ data, onNext, onBack }: Props) {
           </div>
           {errors.mainPhoto && <p className="mt-2 ml-1 text-xs text-red-500 font-medium">{errors.mainPhoto.message}</p>}
         </div>
-
-        {/* Gallery Photos */}
-        <div className="bg-white/40 backdrop-blur-sm p-6 sm:p-8 rounded-3xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-5 gsap-item">
+<div className="bg-white/40 backdrop-blur-sm p-6 sm:p-8 rounded-3xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-5 gsap-item">
           <div className="flex justify-between items-center mb-2">
             <label className="block text-sm font-bold text-gray-800 ml-1 flex items-center gap-2">
               <ImagePlus className="w-5 h-5 text-brand-900" /> Gallery Photos
@@ -211,9 +207,7 @@ export function Step8Photos({ data, onNext, onBack }: Props) {
             />
           </div>
         </div>
-
-        {/* Photo Privacy Settings */}
-        <div className="bg-white/40 backdrop-blur-sm p-6 sm:p-8 rounded-3xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-5 gsap-item">
+<div className="bg-white/40 backdrop-blur-sm p-6 sm:p-8 rounded-3xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-5 gsap-item">
           <label className="block text-sm font-bold text-gray-800 mb-2 ml-1 flex items-center gap-2">
             <Shield className="w-5 h-5 text-brand-900" /> Photo Privacy Settings
           </label>
@@ -259,4 +253,5 @@ export function Step8Photos({ data, onNext, onBack }: Props) {
     </form>
   );
 }
+
 

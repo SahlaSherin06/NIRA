@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchMatchesData, acceptInterest, removeInterest } from "./matchesapi";
+import { fetchMatchesData, acceptInterest, removeInterest } from "./matches.api";
 
 /**
  * Function: matchesKeys
@@ -53,7 +53,7 @@ export const useRemoveInterest = () => {
   });
 };
 
-import { interactApi } from "../../feed/api/feedapi";
+import { interactApi } from "../feed/feed.api";
 
 /**
  * Function: useReportInterest
@@ -69,3 +69,4 @@ export const useReportInterest = () => {
     },
   });
 };
+

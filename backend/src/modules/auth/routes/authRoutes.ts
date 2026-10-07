@@ -4,6 +4,7 @@ import { loginStep1Email, loginStep2OTP, loginStep3Password } from "../controlle
 import { googleLogin } from "../controllers/googleController";
 import { forgotPassword, resetPassword } from "../controllers/passwordController";
 import { getMe, refreshToken, logout } from "../controllers/sessionController";
+import { changePassword, changeEmail } from "../controllers/accountSettingsController";
 import { requireAuth } from "../middleware/authMiddleware";
 
 const router = express.Router();
@@ -24,5 +25,9 @@ router.post("/reset-password", resetPassword);
 router.get("/me", requireAuth, getMe);
 router.post("/refresh", refreshToken);
 router.post("/logout", logout);
+
+// Account Settings
+router.put("/change-password", requireAuth, changePassword);
+router.put("/change-email", requireAuth, changeEmail);
 
 export default router;

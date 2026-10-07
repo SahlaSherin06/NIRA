@@ -2,8 +2,8 @@
 
 import React, { useState } from "react";
 import { ChevronLeft, ChevronRight, MapPin, Heart, ShieldCheck, Sparkles, Search, Filter, X } from "lucide-react";
-import { useExploreData } from "../api/explorequeries";
-import { Recommendation } from "@/features/feed/api/feedapi";
+import { useExploreData } from "../explore.queries";
+import { Recommendation } from "@/features/feed/feed.api";
 
 interface ExploreFeedProps {
   onProfileClick: (profile: Recommendation) => void;
@@ -17,7 +17,7 @@ const HorizontalScrollContainer = ({ children }: { children: React.ReactNode }) 
   </div>
 );
 
-const ProfileCardSmall = ({ profile, type, onClick }: { profile: Recommendation, type: 'complete' | 'new', onClick: () => void }) => {
+const ProfileCardSmall = React.memo(({ profile, type, onClick }: { profile: Recommendation, type: 'complete' | 'new', onClick: () => void }) => {
   return (
     <div 
       onClick={onClick}
@@ -83,7 +83,7 @@ const ProfileCardSmall = ({ profile, type, onClick }: { profile: Recommendation,
       </div>
     </div>
   );
-};
+});
 
 /**
  * Component: ExploreFeed
@@ -104,7 +104,8 @@ export function ExploreFeed({ onProfileClick }: ExploreFeedProps) {
     };
   }, [searchQuery]);
 
-  const { data, isLoading } = useExploreData(debouncedQuery ? { q: debouncedQuery } : {});
+  
+  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useExploreData(debouncedQuery ? { q: debouncedQuery } : {});
 
   const clearFilters = () => {
     setSearchQuery("");
@@ -119,7 +120,10 @@ export function ExploreFeed({ onProfileClick }: ExploreFeedProps) {
       );
     }
 
-    const totalResults = data.completeBios.length + data.justJoined.length;
+    const completeBios = data.pages.flatMap(page => page.completeBios);
+    const justJoined = data.pages.flatMap(page => page.justJoined);
+    const totalResults = completeBios.length + justJoined.length;
+
 
     return (
       <>
@@ -142,7 +146,7 @@ export function ExploreFeed({ onProfileClick }: ExploreFeedProps) {
         )}
 
         {/* Complete Bios Section */}
-        {data.completeBios.length > 0 && (
+        {completeBios.length > 0 && (
           <div className="mb-12">
             <div className="flex justify-between items-end mb-6">
               <div>
@@ -160,7 +164,7 @@ export function ExploreFeed({ onProfileClick }: ExploreFeedProps) {
             </div>
 
             <HorizontalScrollContainer>
-              {data.completeBios.map((profile) => (
+              {completeBios.map((profile) => (
                 <ProfileCardSmall 
                   key={profile._id} 
                   profile={profile} 
@@ -173,7 +177,7 @@ export function ExploreFeed({ onProfileClick }: ExploreFeedProps) {
         )}
 
         {/* Just Joined Section */}
-        {data.justJoined.length > 0 && (
+        {justJoined.length > 0 && (
           <div className="mb-12">
             <div className="flex justify-between items-end mb-6">
               <div>
@@ -194,7 +198,7 @@ export function ExploreFeed({ onProfileClick }: ExploreFeedProps) {
             </div>
 
             <HorizontalScrollContainer>
-              {data.justJoined.map((profile) => (
+              {justJoined.map((profile) => (
                 <ProfileCardSmall 
                   key={profile._id} 
                   profile={profile} 
@@ -239,3 +243,5 @@ export function ExploreFeed({ onProfileClick }: ExploreFeedProps) {
     </div>
   );
 }
+
+

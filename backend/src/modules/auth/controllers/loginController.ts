@@ -1,18 +1,17 @@
-import { Request, Response } from "express";
+import { asyncHandler } from "../../../utils/asyncHandler";
+import { Request, Response , NextFunction } from "express";
 import bcrypt from "bcrypt";
 import { User } from "../models/User";
 import { redis } from "../../../utils/redisClient";
 import { sendOtpEmail } from "../../../utils/sendEmail";
 import { generateTokens } from "../../../utils/jwtUtils";
 
-// STEP 1: Email -> Send OTP
 /**
  * Function: loginStep1Email
  * Executes the core operations and logic for login step1 email.
  */
-export const loginStep1Email = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { email } = req.body;
+export const loginStep1Email = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const { email } = req.body;
     if (!email) {
       res.status(400).json({ message: "Email is required" });
       return;
@@ -37,20 +36,14 @@ export const loginStep1Email = async (req: Request, res: Response): Promise<void
     sendOtpEmail(email, otp).catch((err) => console.error("OTP send failed:", err));
 
     res.status(200).json({ message: "OTP sent successfully" });
-  } catch (error) {
-    console.error("Login Step 1 Error:", error);
-    res.status(500).json({ message: "Failed to initiate login" });
-  }
-};
+});
 
-// STEP 2: Verify OTP
 /**
  * Function: loginStep2OTP
  * Executes the core operations and logic for login step2 o t p.
  */
-export const loginStep2OTP = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { email, otp } = req.body;
+export const loginStep2OTP = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const { email, otp } = req.body;
 
     if (!email || !otp) {
       res.status(400).json({ message: "Email and OTP are required" });
@@ -77,20 +70,14 @@ export const loginStep2OTP = async (req: Request, res: Response): Promise<void> 
     await redis.set(passedKey, "true", "EX", 300);
 
     res.status(200).json({ message: "OTP verified successfully" });
-  } catch (error) {
-    console.error("Login Step 2 Error:", error);
-    res.status(500).json({ message: "Failed to verify OTP" });
-  }
-};
+});
 
-// STEP 3: Verify Password & Login
 /**
  * Function: loginStep3Password
  * Executes the core operations and logic for login step3 password.
  */
-export const loginStep3Password = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { email, password } = req.body;
+export const loginStep3Password = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const { email, password } = req.body;
 
     if (!email || !password) {
       res.status(400).json({ message: "Email and password are required" });
@@ -132,8 +119,5 @@ export const loginStep3Password = async (req: Request, res: Response): Promise<v
         isOnboardingComplete: user.isOnboardingComplete 
       },
     });
-  } catch (error) {
-    console.error("Login Step 3 Error:", error);
-    res.status(500).json({ message: "Server error during login" });
-  }
-};
+});
+

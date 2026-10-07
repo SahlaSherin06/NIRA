@@ -1,4 +1,5 @@
-import { Request, Response } from "express";
+import { asyncHandler } from "../../../utils/asyncHandler";
+import { Request, Response , NextFunction } from "express";
 import bcrypt from "bcrypt";
 import { User } from "../models/User";
 import { Account } from "../models/Account";
@@ -6,14 +7,12 @@ import { redis } from "../../../utils/redisClient";
 import { sendOtpEmail } from "../../../utils/sendEmail";
 import { generateTokens } from "../../../utils/jwtUtils";
 
-// STEP 1: Basic Info & Send OTP
 /**
  * Function: registerStep1
  * Executes the core operations and logic for register step1.
  */
-export const registerStep1 = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { name, email, gender, createdFor } = req.body;
+export const registerStep1 = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const { name, email, gender, createdFor } = req.body;
 
     if (!name || !email || !gender || !createdFor) {
       res.status(400).json({ message: "All basic fields are required" });
@@ -39,20 +38,14 @@ export const registerStep1 = async (req: Request, res: Response): Promise<void> 
     sendOtpEmail(email, otp).catch(err => console.error("Register OTP email failed:", err));
 
     res.status(200).json({ message: "OTP sent successfully. Please check your email." });
-  } catch (error) {
-    console.error("Register Step 1 Error:", error);
-    res.status(500).json({ message: "Failed to initiate registration" });
-  }
-};
+});
 
-// STEP 2: Verify OTP
 /**
  * Function: registerStep2
  * Executes the core operations and logic for register step2.
  */
-export const registerStep2 = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { email, otp } = req.body;
+export const registerStep2 = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const { email, otp } = req.body;
 
     if (!email || !otp) {
       res.status(400).json({ message: "Email and OTP are required" });
@@ -90,20 +83,14 @@ export const registerStep2 = async (req: Request, res: Response): Promise<void> 
     await redis.set(passedKey, passedData, "EX", 600); // 10 minutes
 
     res.status(200).json({ message: "OTP verified successfully" });
-  } catch (error) {
-    console.error("Register Step 2 Error:", error);
-    res.status(500).json({ message: "Failed to verify OTP" });
-  }
-};
+});
 
-// STEP 3: Set Password & Create Account
 /**
  * Function: registerStep3
  * Executes the core operations and logic for register step3.
  */
-export const registerStep3 = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { email, password, confirmPassword } = req.body;
+export const registerStep3 = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const { email, password, confirmPassword } = req.body;
 
     if (!email || !password || !confirmPassword) {
       res.status(400).json({ message: "Password is required" });
@@ -161,8 +148,5 @@ export const registerStep3 = async (req: Request, res: Response): Promise<void> 
         isOnboardingComplete: newUser.isOnboardingComplete
       },
     });
-  } catch (error) {
-    console.error("Register Step 3 Error:", error);
-    res.status(500).json({ message: "Failed to create account" });
-  }
-};
+});
+

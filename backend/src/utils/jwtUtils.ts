@@ -28,7 +28,7 @@ export const generateTokens = async (userId: mongoose.Types.ObjectId, res: Respo
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true, // Prevents JavaScript from reading it (XSS protection)
     secure: process.env.NODE_ENV === "production", // Only HTTPS in production
-    sameSite: "strict",
+    sameSite: "lax",
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
   });
 

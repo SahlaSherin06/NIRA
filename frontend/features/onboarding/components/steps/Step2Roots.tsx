@@ -166,9 +166,7 @@ export function Step2Roots({ data, onNext, onBack }: Props) {
       </div>
 
       <div className="space-y-6">
-        
-        {/* Origin Section */}
-        <div className="bg-white/40 backdrop-blur-sm p-6 rounded-3xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-5 gsap-item">
+<div className="bg-white/40 backdrop-blur-sm p-6 rounded-3xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-5 gsap-item">
           <h3 className="text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">
             <Compass className="w-5 h-5 text-brand-900" /> Origin
           </h3>
@@ -221,9 +219,7 @@ export function Step2Roots({ data, onNext, onBack }: Props) {
             </div>
           </div>
         </div>
-
-        {/* Current Location Section */}
-        <div className="bg-white/40 backdrop-blur-sm p-6 rounded-3xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-5 gsap-item">
+<div className="bg-white/40 backdrop-blur-sm p-6 rounded-3xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-5 gsap-item">
           <h3 className="text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">
             <MapPin className="w-5 h-5 text-brand-900" /> Current Location
           </h3>
@@ -271,9 +267,7 @@ export function Step2Roots({ data, onNext, onBack }: Props) {
             </div>
           </div>
         </div>
-
-        {/* Culture Section */}
-        <div className="bg-white/40 backdrop-blur-sm p-6 rounded-3xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-5 gsap-item">
+<div className="bg-white/40 backdrop-blur-sm p-6 rounded-3xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-5 gsap-item">
           <h3 className="text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">
             <Users className="w-5 h-5 text-brand-900" /> Culture & Religion
           </h3>
@@ -371,4 +365,5 @@ export function Step2Roots({ data, onNext, onBack }: Props) {
     </form>
   );
 }
+
 

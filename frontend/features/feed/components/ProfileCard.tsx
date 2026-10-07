@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Recommendation } from "../api/feedapi";
+import { Recommendation } from "../feed.api";
 import { 
   MapPin, 
   Briefcase, 
@@ -9,7 +9,6 @@ import {
   Globe, 
   Utensils, 
   Languages, 
-  Lock,
   Ban,
   AlertTriangle
 } from "lucide-react";
@@ -28,7 +27,7 @@ export function ProfileCard({ user, onAction }: ProfileCardProps) {
   const age = new Date().getFullYear() - new Date(profile.dob).getFullYear();
 
   return (
-    <div className="w-full bg-white rounded-3xl shadow-xl overflow-hidden flex flex-col mb-8">
+    <div className="w-full bg-white rounded-3xl shadow-xl overflow-hidden flex flex-col mb-0 pb-4">
       <div className="flex-1 pb-16">
         
         {/* SECTION 1: Main Photo */}
@@ -251,7 +250,7 @@ export function ProfileCard({ user, onAction }: ProfileCardProps) {
                     }}
                     className="flex-1 py-2 text-sm font-bold text-white bg-red-600 rounded-lg hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Submit Report
+                    Submit
                   </button>
                 </div>
               </div>
@@ -280,3 +279,5 @@ export function ProfileCard({ user, onAction }: ProfileCardProps) {
     </div>
   );
 }
+
+

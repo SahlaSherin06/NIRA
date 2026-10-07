@@ -90,9 +90,7 @@ export function Step4Lifestyle({ data, onNext, onBack }: Props) {
       </div>
 
       <div className="space-y-6">
-        
-        {/* Diet & Dressing */}
-        <div className="bg-white/40 backdrop-blur-sm p-6 sm:p-8 rounded-3xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-8 gsap-item">
+<div className="bg-white/40 backdrop-blur-sm p-6 sm:p-8 rounded-3xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-8 gsap-item">
           
           <div>
             <label className="block text-sm font-bold text-gray-800 mb-4 ml-1 flex items-center gap-2">
@@ -133,9 +131,7 @@ export function Step4Lifestyle({ data, onNext, onBack }: Props) {
           </div>
 
         </div>
-
-        {/* Smoking & Drinking */}
-        <div className="bg-white/40 backdrop-blur-sm p-6 sm:p-8 rounded-3xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-8 gsap-item">
+<div className="bg-white/40 backdrop-blur-sm p-6 sm:p-8 rounded-3xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-8 gsap-item">
           
           <div>
             <label className="block text-sm font-bold text-gray-800 mb-4 ml-1 flex items-center gap-2">
@@ -190,4 +186,5 @@ export function Step4Lifestyle({ data, onNext, onBack }: Props) {
     </form>
   );
 }
+
 

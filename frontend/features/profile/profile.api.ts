@@ -68,3 +68,4 @@ export const updateMyProfileApi = async (data: Partial<MyProfileResponse>) => {
   const res = await api.put("/profile/me", data);
   return res.data;
 };
+

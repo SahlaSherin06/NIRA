@@ -1,4 +1,5 @@
-import { Request, Response } from "express";
+import { asyncHandler } from "../../../utils/asyncHandler";
+import { Request, Response , NextFunction } from "express";
 import { Interaction } from "../models/Interaction";
 import { User } from "../../auth/models/User";
 
@@ -7,9 +8,8 @@ import { User } from "../../auth/models/User";
  * Function: recordAction
  * Executes the core operations and logic for record action.
  */
-export const recordAction = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const actorId = (req as any).user?.userId;
+export const recordAction = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const actorId = (req as any).user?.userId;
     if (!actorId) {
       res.status(401).json({ message: "Unauthorized" });
       return;
@@ -73,20 +73,15 @@ export const recordAction = async (req: Request, res: Response): Promise<void> =
     // If action is "like", we could check if the target already liked the actor to create a Match.
     // For now, we just return success.
     res.status(200).json({ message: `Successfully recorded ${action}` });
-  } catch (error) {
-    console.error("Record Interaction Error:", error);
-    res.status(500).json({ message: "Failed to record interaction" });
-  }
-};
+});
 
 // DELETE /api/feed/interact/:targetId
 /**
  * Function: removeAction
  * Executes the core operations and logic for remove action.
  */
-export const removeAction = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const actorId = (req as any).user?.userId;
+export const removeAction = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const actorId = (req as any).user?.userId;
     const { targetId } = req.params;
 
     if (!actorId || !targetId) {
@@ -96,8 +91,76 @@ export const removeAction = async (req: Request, res: Response): Promise<void> =
 
     await Interaction.findOneAndDelete({ actorId, targetId });
     res.status(200).json({ message: "Interaction removed successfully" });
-  } catch (error) {
-    console.error("Remove Interaction Error:", error);
-    res.status(500).json({ message: "Failed to remove interaction" });
+});
+
+
+/**
+ * Function: getActivityLogs
+ * Fetches the user's past interactions in reverse chronological order (newest first).
+ */
+export const getActivityLogs = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const actorId = (req as any).user?.userId;
+  if (!actorId) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
   }
-};
+
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 20;
+  const skip = (page - 1) * limit;
+
+  const pipeline: any[] = [
+    { $match: { actorId: new (require('mongoose').Types.ObjectId)(actorId) } },
+    { $sort: { createdAt: -1 } },
+    { $skip: skip },
+    { $limit: limit + 1 },
+    {
+      $lookup: {
+        from: "users",
+        localField: "targetId",
+        foreignField: "_id",
+        as: "targetUser"
+      }
+    },
+    { $unwind: "$targetUser" },
+    {
+      $lookup: {
+        from: "profiles",
+        localField: "targetId",
+        foreignField: "userId",
+        as: "targetProfile"
+      }
+    },
+    {
+      $unwind: {
+        path: "$targetProfile",
+        preserveNullAndEmptyArrays: true
+      }
+    },
+    {
+      $project: {
+        _id: 1,
+        action: 1,
+        createdAt: 1,
+        reason: 1,
+        "targetUser._id": 1,
+        "targetUser.name": 1,
+        "targetProfile.mainPhoto": 1,
+        "targetProfile.city": 1,
+        "targetProfile.profession": 1
+      }
+    }
+  ];
+
+  const logs = await Interaction.aggregate(pipeline);
+
+  const hasNextPage = logs.length > limit;
+  if (hasNextPage) {
+    logs.pop();
+  }
+
+  res.status(200).json({
+    logs,
+    nextPage: hasNextPage ? page + 1 : null
+  });
+});
