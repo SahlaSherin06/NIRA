@@ -1,12 +1,12 @@
 import { Notification } from "../../notifications/models/Notification";
 import { Request, Response, NextFunction } from "express";
+
 import { asyncHandler } from "../../../utils/asyncHandler";
 import { Conversation } from "../models/Conversation";
 import { Message } from "../models/Message";
 import { Interaction } from "../../feed/models/Interaction";
 import mongoose from "mongoose";
 
-// Helper to check mutual match
 const checkMutualMatch = async (userId: string, targetId: string) => {
   const [sentLike, receivedLike] = await Promise.all([
     Interaction.findOne({ actorId: userId, targetId, action: "like" }),
@@ -43,7 +43,6 @@ export const getConversations = asyncHandler(async (req: Request, res: Response,
     .flatMap(c => c.participants.map(p => p.toString()))
     .filter(p => p !== userId.toString());
 
-  // Union
   const allVisibleUserIds = Array.from(new Set([...mutualMatchIds, ...convoOtherUserIds]));
 
   if (allVisibleUserIds.length === 0) {
@@ -68,20 +67,7 @@ export const getConversations = asyncHandler(async (req: Request, res: Response,
     { $group: { _id: "$conversationId", count: { $sum: 1 } } }
   ]);
 
-  const calculateAge = (dobString: string | undefined) => {
-    if (!dobString) return "";
-    const birthDate = new Date(dobString);
-    if (isNaN(birthDate.getTime())) return "";
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-    return age;
-  };
-
-  // 5. Merge
+// 5. Merge
   const result = allUsers.map((user: any) => {
     const convo = conversations.find(c => 
       c.participants.some(p => p.toString() === user._id.toString())
@@ -100,7 +86,6 @@ export const getConversations = asyncHandler(async (req: Request, res: Response,
       otherUser: {
         _id: user._id,
         name: user.name,
-        age: calculateAge(profile?.dob),
         mainPhoto: profile?.mainPhoto || null
       },
       lastMessage: convo?.lastMessage || null,
@@ -113,7 +98,6 @@ export const getConversations = asyncHandler(async (req: Request, res: Response,
     };
   });
 
-  // Sort by updatedAt descending
   result.sort((a: any, b: any) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
   res.status(200).json(result);

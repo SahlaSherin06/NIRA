@@ -94,13 +94,13 @@ export const getRecommendations = asyncHandler(async (req: Request, res: Respons
 
     // Apply pagination
     pipeline.push({ $skip: skip });
-    pipeline.push({ $limit: limit + 1 }); // Fetch one extra to check if there is a next page
+    pipeline.push({ $limit: limit + 1 }); 
 
     const targetUsers = await User.aggregate(pipeline);
 
     const hasNextPage = targetUsers.length > limit;
     if (hasNextPage) {
-      targetUsers.pop(); // Remove the extra item
+      targetUsers.pop(); 
     }
 
     const formattedRecommendations = targetUsers.map(user => ({

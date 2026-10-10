@@ -1,13 +1,12 @@
-import { Router } from "express";
+import express from "express";
+import { devUpgrade } from "../controllers/subscriptionController";
 import { requireAuth } from "../../auth/middleware/authMiddleware";
-import { createOrder, verifyPayment, devUpgrade } from "../controllers/subscriptionController";
 
-const router = Router();
+const router = express.Router();
 
 router.use(requireAuth);
 
-router.post("/create-order", createOrder);
-router.post("/verify-payment", verifyPayment);
+// Dev shortcut route
 router.post("/dev-upgrade", devUpgrade);
 
 export default router;
