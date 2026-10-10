@@ -5,9 +5,18 @@ export interface Conversation {
   otherUser: {
     _id: string;
     name: string;
+    age?: number | string;
     mainPhoto: string | null;
   };
-  lastMessage?: string; // object id
+  lastMessage?: {
+    content: string;
+    createdAt: string;
+  } | null;
+  unreadCount?: number;
+  isBlockedByMe?: boolean;
+  isBlockedByThem?: boolean;
+  isMutual?: boolean;
+  haveISentLike?: boolean;
   updatedAt: string;
 }
 
@@ -31,5 +40,10 @@ export const getMessagesApi = async (targetId: string): Promise<Message[]> => {
 
 export const sendMessageApi = async (data: { targetId: string; content: string }): Promise<Message> => {
   const res = await api.post(`/chat/${data.targetId}`, { content: data.content });
+  return res.data;
+};
+
+export const clearChatApi = async (targetId: string) => {
+  const res = await api.delete(`/chat/${targetId}`);
   return res.data;
 };

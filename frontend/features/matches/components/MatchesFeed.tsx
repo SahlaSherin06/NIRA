@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
+import { useSession } from "@/features/auth/auth.queries";
 import Link from "next/link";
-import { useMatchesData, useAcceptInterest, useRemoveInterest, useReportInterest } from "../matches.queries";
+import { useMatchesData, useAcceptInterest, useRemoveInterest, useReportInterest, useBlockInterest } from "../matches.queries";
 import { MatchProfile } from "../matches.api";
-import { MessageCircle, Check, MoreHorizontal, ShieldCheck, Heart } from "lucide-react";
+import { ProfileCard } from "../../feed/components/ProfileCard";
+import { MessageCircle, Crown, X, Check, MoreHorizontal, ShieldCheck, Heart, Ban } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 const NewMatchesCarousel = ({ profiles }: { profiles: MatchProfile[] }) => {
@@ -36,12 +38,14 @@ const NewMatchesCarousel = ({ profiles }: { profiles: MatchProfile[] }) => {
   );
 };
 
-const MatchCard = React.memo(({ profile, type }: { profile: MatchProfile, type: 'mutual' | 'received' | 'sent' }) => {
+const MatchCard = React.memo(({ profile, type, onClick, isPremium }: { profile: MatchProfile, type: 'mutual' | 'received' | 'sent', onClick?: () => void, isPremium: boolean }) => {
   const { mutate: acceptInterest, isPending } = useAcceptInterest();
   const { mutate: removeInterest, isPending: isRemoving } = useRemoveInterest();
   const { mutate: reportInterest, isPending: isReporting } = useReportInterest();
+  const { mutate: blockInterest, isPending: isBlocking } = useBlockInterest();
   const [showMenu, setShowMenu] = useState(false);
   const [showReport, setShowReport] = useState(false);
+    const [showBlockConfirm, setShowBlockConfirm] = useState(false);
   const [reportReason, setReportReason] = useState("");
 
   const handleReport = () => {
@@ -52,7 +56,7 @@ const MatchCard = React.memo(({ profile, type }: { profile: MatchProfile, type: 
   };
 
   return (
-    <div className="bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100/50 flex flex-col h-full group cursor-pointer relative">
+    <div onClick={onClick} className="bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100/50 flex flex-col h-full group cursor-pointer relative">
       
       {/* Image Section */}
       <div className="relative h-80 w-full bg-gray-100 overflow-hidden">
@@ -65,14 +69,11 @@ const MatchCard = React.memo(({ profile, type }: { profile: MatchProfile, type: 
         {/* Deep Gradient for readability */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
 
-        <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1.5 rounded-full flex items-center shadow-md">
-          <ShieldCheck className="w-3.5 h-3.5 text-brand-900 mr-1.5" />
-          <span className="text-[10px] font-bold text-gray-800 uppercase tracking-wider">Verified</span>
-        </div>
+        
 
         {/* Text overlaid on image */}
         <div className="absolute bottom-5 left-5 right-5">
-          <h3 className="text-2xl font-serif font-bold text-white mb-1.5 drop-shadow-md">
+          <h3 className="text-2xl font-serif font-bold text-white mb-1.5 drop-shadow-md flex items-center">
             {profile.name.split(' ')[0]}, {new Date().getFullYear() - new Date(profile.profile.dob).getFullYear()}
           </h3>
           <p className="text-xs font-medium text-white/90 drop-shadow-md">
@@ -84,9 +85,7 @@ const MatchCard = React.memo(({ profile, type }: { profile: MatchProfile, type: 
       {/* Info Section */}
       <div className="p-5 flex-1 flex flex-col bg-white">
         
-        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-4">
-          {type === 'mutual' ? 'Matched' : type === 'received' ? 'Received' : 'Sent'} {formatDistanceToNow(new Date(profile.matchedAt), { addSuffix: true })}
-        </p>
+        
 
         <div className="flex flex-wrap gap-2 mb-6">
           <span className="px-3 py-1.5 bg-brand-50/70 text-brand-900 text-[11px] font-bold rounded-xl border border-brand-100/50">
@@ -110,7 +109,7 @@ const MatchCard = React.memo(({ profile, type }: { profile: MatchProfile, type: 
 
           {type === 'received' && (
             <button 
-              onClick={() => acceptInterest(profile._id)}
+              onClick={(e) => { e.stopPropagation(); acceptInterest(profile._id); }}
               disabled={isPending}
               className="flex-1 bg-gradient-to-r from-green-400 to-green-500 hover:from-green-500 hover:to-green-600 text-white py-3 rounded-2xl text-sm font-bold flex items-center justify-center transition-all shadow-md hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-50"
             >
@@ -145,6 +144,12 @@ const MatchCard = React.memo(({ profile, type }: { profile: MatchProfile, type: 
                   </button>
                 )}
                 <button 
+                  onClick={(e) => { e.stopPropagation(); setShowMenu(false); setShowBlockConfirm(true); }}
+                  className="w-full text-left px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Block
+                </button>
+                <button 
                   onClick={(e) => { e.stopPropagation(); setShowMenu(false); setShowReport(true); }}
                   className="w-full text-left px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
                 >
@@ -155,6 +160,34 @@ const MatchCard = React.memo(({ profile, type }: { profile: MatchProfile, type: 
           </div>
         </div>
       </div>
+
+            {/* BLOCK CONFIRM OVERLAY */}
+      {showBlockConfirm && (
+        <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-30 flex flex-col p-6 items-center justify-center animate-in fade-in zoom-in duration-200">
+          <Ban className="w-10 h-10 text-gray-400 mb-3" />
+          <h3 className="text-xl font-serif font-bold text-gray-900 mb-2">Block User</h3>
+          <p className="text-sm text-gray-500 mb-6 text-center">Are you sure you want to block {profile.name.split(' ')[0]}? This action cannot be undone.</p>
+          <div className="flex space-x-3 w-full mt-auto">
+            <button 
+              onClick={(e) => { e.stopPropagation(); setShowBlockConfirm(false); }}
+              className="flex-1 py-3 text-sm font-bold text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
+            >
+              Cancel
+            </button>
+            <button 
+              disabled={isBlocking}
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                blockInterest({ targetId: profile._id }); 
+                setShowBlockConfirm(false); 
+              }}
+              className="flex-1 py-3 text-sm font-bold text-white bg-red-600 rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50"
+            >
+              {isBlocking ? '...' : 'Confirm'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* REPORT OVERLAY */}
       {showReport && (
@@ -206,6 +239,9 @@ const MatchCard = React.memo(({ profile, type }: { profile: MatchProfile, type: 
 export function MatchesFeed() {
   const { data, isLoading, isError, error } = useMatchesData();
   const [activeTab, setActiveTab] = useState<'mutual' | 'received' | 'sent'>('mutual');
+  const [selectedProfile, setSelectedProfile] = useState<MatchProfile | null>(null);
+  const { data: session } = useSession();
+  const isPremium = session?.user?.subscription?.plan === 'premium';
 
   if (isLoading) {
     return (
@@ -279,16 +315,13 @@ export function MatchesFeed() {
         </button>
       </div>
 
-      {/* New Matches Carousel (Only shown in Mutual Matches) */}
-      {activeTab === 'mutual' && (
-        <NewMatchesCarousel profiles={data.mutualMatches.slice(0, 8)} />
-      )}
+      
 
       {/* Grid of Cards */}
       {activeProfiles.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
           {activeProfiles.map(profile => (
-            <MatchCard key={profile._id} profile={profile} type={activeTab} />
+            <MatchCard key={profile._id} profile={profile} type={activeTab} onClick={() => setSelectedProfile(profile)} isPremium={isPremium || false} />
           ))}
         </div>
       ) : (
@@ -303,7 +336,22 @@ export function MatchesFeed() {
         </div>
       )}
 
+      {/* Profile Modal View */}
+      {selectedProfile && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 custom-scrollbar overflow-y-auto">
+          <div className="relative w-full max-w-2xl bg-transparent my-auto h-max pt-10 pb-10">
+            <button 
+              onClick={() => setSelectedProfile(null)}
+              className="absolute top-0 right-0 z-50 w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-100 transition-colors border border-gray-200"
+            >
+              <X className="w-5 h-5 text-gray-600" />
+            </button>
+            <div className="bg-white rounded-[2rem] overflow-hidden shadow-2xl">
+              <ProfileCard user={selectedProfile} isMatch={activeTab === 'mutual'} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-

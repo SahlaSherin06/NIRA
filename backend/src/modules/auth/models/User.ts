@@ -8,6 +8,12 @@ export interface IUser extends Document {
   createdFor?: string;
   isEmailVerified: boolean;
   isOnboardingComplete: boolean;
+  isPhotoBlurred: boolean;
+  subscription: {
+    plan: 'free' | 'premium';
+    expiresAt?: Date;
+    razorpayCustomerId?: string;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -37,9 +43,18 @@ const userSchema: Schema = new Schema(
       type: Boolean,
       default: false,
     },
-    isOnboardingComplete: {
+    isPhotoBlurred: {
       type: Boolean,
       default: false,
+    },
+      isOnboardingComplete: {
+      type: Boolean,
+      default: false,
+    },
+    subscription: {
+      plan: { type: String, enum: ['free', 'premium'], default: 'free' },
+      expiresAt: { type: Date },
+      razorpayCustomerId: { type: String }
     }
   },
   { timestamps: true }

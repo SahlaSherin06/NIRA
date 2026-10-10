@@ -15,8 +15,8 @@ export const getMatchesData = asyncHandler(async (req: Request, res: Response, n
       return;
     }
 
-        const sentInteractions = await Interaction.find({ actorId: userId, action: "like" });
-    const receivedInteractions = await Interaction.find({ targetId: userId, action: "like" });
+        const sentInteractions = await Interaction.find({ actorId: userId, action: { $in: ["like", "superlike"] } });
+    const receivedInteractions = await Interaction.find({ targetId: userId, action: { $in: ["like", "superlike"] } });
 
     const sentTargetIds = sentInteractions.map(i => i.targetId.toString());
     const receivedActorIds = receivedInteractions.map(i => i.actorId.toString());
@@ -53,6 +53,7 @@ export const getMatchesData = asyncHandler(async (req: Request, res: Response, n
         _id: u._id,
         name: u.name,
         gender: u.gender,
+        subscription: u.subscription,
         profile: u.profile,
         // Since we don't have a formal chat yet, just mock the matched date
         matchedAt: new Date().toISOString()

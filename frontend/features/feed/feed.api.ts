@@ -6,6 +6,9 @@ export interface Recommendation {
   _id: string;
   name: string;
   gender: string;
+    subscription?: {
+      plan: 'free' | 'premium';
+    };
   profile: {
     dob: string;
     height: number;
@@ -39,7 +42,7 @@ export interface Recommendation {
     moveAbroad: string;
     mainPhoto: string;
     galleryPhotos: string[];
-    photoPrivacy: "Public" | "Blurred";
+    photoPrivacy: string;
   };
 }
 
@@ -65,8 +68,14 @@ export const getRecommendationsApi = async (page = 1): Promise<{ recommendations
  * Function: interactApi
  * Executes the core operations and logic for interact api.
  */
-export const interactApi = async (data: { targetId: string; action: "like" | "pass" | "block" | "favorite" | "report", reason?: string }) => {
+export const interactApi = async (data: { targetId: string; action: "like" | "superlike" | "pass" | "block" | "favorite" | "report", reason?: string }) => {
   const response = await api.post("/feed/interact", data);
+  return response.data;
+};
+
+
+export const undoPassApi = async () => {
+  const response = await api.post("/feed/undo-pass");
   return response.data;
 };
 
@@ -104,7 +113,7 @@ export function useInteract() {
 
 export interface ActivityLog {
   _id: string;
-  action: "like" | "pass" | "block" | "favorite" | "report";
+  action: "like" | "superlike" | "pass" | "block" | "favorite" | "report";
   createdAt: string;
   reason?: string;
   targetUser: {
@@ -129,5 +138,54 @@ export function useActivityLogs() {
     queryFn: ({ pageParam = 1 }) => getActivityLogsApi(pageParam),
     initialPageParam: 1,
     getNextPageParam: (lastPage) => lastPage.nextPage,
+  });
+}
+
+export interface BlockedUser {
+  _id: string;
+  name: string;
+  mainPhoto: string | null;
+  blockedAt: string;
+}
+
+export const getBlockedUsersApi = async (): Promise<{ blockedUsers: BlockedUser[] }> => {
+  const response = await api.get('/feed/blocked');
+  return response.data;
+};
+
+export const removeActionApi = async (targetId: string) => {
+  const response = await api.delete(`/feed/interact/${targetId}`);
+  return response.data;
+};
+
+import { useQuery } from "@tanstack/react-query";
+
+export function useBlockedUsers() {
+  return useQuery({
+    queryKey: [...feedKeys.all, "blocked"],
+    queryFn: getBlockedUsersApi,
+  });
+}
+
+export function useRemoveAction() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: removeActionApi,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...feedKeys.all, "blocked"] });
+      queryClient.invalidateQueries({ queryKey: [...feedKeys.all, "activity"] });
+      queryClient.invalidateQueries({ queryKey: ["chat", "conversations"] }); // invalidate chat list too
+    },
+  });
+}
+
+export function useUndoPass() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: undoPassApi,
+    onSuccess: () => {
+      // Allow the component to handle local state update
+    }
   });
 }

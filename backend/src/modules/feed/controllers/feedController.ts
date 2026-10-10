@@ -33,7 +33,7 @@ export const getRecommendations = asyncHandler(async (req: Request, res: Respons
     const userGender = currentUser.gender?.toLowerCase() || 'male';
     const targetGender = userGender === 'male' ? 'female' : 'male';
 
-    const pastInteractions = await Interaction.find({ actorId: userId });
+    const pastInteractions = await Interaction.find({ actorId: currentUser._id });
     const excludedIds = pastInteractions.map(i => i.targetId);
     excludedIds.push(currentUser._id); 
     
@@ -107,6 +107,7 @@ export const getRecommendations = asyncHandler(async (req: Request, res: Respons
       _id: user._id,
       name: user.name,
       gender: user.gender,
+      subscription: user.subscription,
       profile: user.profile
     }));
 

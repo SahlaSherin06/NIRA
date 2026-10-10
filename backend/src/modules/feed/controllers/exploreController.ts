@@ -27,7 +27,7 @@ export const getExploreData = asyncHandler(async (req: Request, res: Response, n
     const targetGender = userGender === 'male' ? 'female' : 'male';
 
     // Exclude users already interacted with
-    const pastInteractions = await Interaction.find({ actorId: userId });
+    const pastInteractions = await Interaction.find({ actorId: currentUser._id });
     const excludedIds = pastInteractions.map(i => i.targetId);
     excludedIds.push(currentUser._id);
 
@@ -127,6 +127,7 @@ export const getExploreData = asyncHandler(async (req: Request, res: Response, n
       _id: user._id,
       name: user.name,
       gender: user.gender,
+      subscription: user.subscription,
       profile: user.profile
     }));
 
@@ -139,6 +140,7 @@ export const getExploreData = asyncHandler(async (req: Request, res: Response, n
       _id: user._id,
       name: user.name,
       gender: user.gender,
+      subscription: user.subscription,
       profile: user.profile
     }));
 

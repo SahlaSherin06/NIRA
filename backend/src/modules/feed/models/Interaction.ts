@@ -3,7 +3,7 @@ import mongoose, { Document, Schema } from "mongoose";
 export interface IInteraction extends Document {
   actorId: mongoose.Types.ObjectId;
   targetId: mongoose.Types.ObjectId;
-  action: "like" | "pass" | "block" | "favorite" | "report";
+  action: "like" | "superlike" | "pass" | "block" | "favorite" | "report";
   reason?: string;
   createdAt: Date;
 }
@@ -14,7 +14,7 @@ const InteractionSchema = new Schema<IInteraction>(
     targetId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     action: {
       type: String,
-      enum: ["like", "pass", "block", "favorite", "report"],
+      enum: ["like", "superlike", "pass", "block", "favorite", "report"],
       required: true,
     },
     reason: {

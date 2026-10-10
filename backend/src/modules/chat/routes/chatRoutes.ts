@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { requireAuth } from "../../auth/middleware/authMiddleware";
-import { getConversations, getMessages, sendMessage } from "../controllers/chatController";
+import { getConversations, getMessages, sendMessage, clearChat } from "../controllers/chatController";
 
 const router = Router();
 
@@ -11,3 +11,5 @@ router.get("/:targetId", getMessages);
 router.post("/:targetId", sendMessage);
 
 export default router;
+
+router.delete("/:targetId", clearChat);

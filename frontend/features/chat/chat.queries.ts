@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getConversationsApi, getMessagesApi, sendMessageApi } from "./chat.api";
+import { getConversationsApi, getMessagesApi, sendMessageApi, clearChatApi } from "./chat.api";
 
 export const chatKeys = {
   all: ["chat"] as const,
@@ -34,3 +34,14 @@ export function useSendMessage() {
     },
   });
 }
+
+export const useClearChat = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: clearChatApi,
+    onSuccess: (_, targetId) => {
+      queryClient.invalidateQueries({ queryKey: chatKeys.messages(targetId) });
+      queryClient.invalidateQueries({ queryKey: chatKeys.conversations() });
+    }
+  });
+};

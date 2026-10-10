@@ -17,8 +17,8 @@ const step8Schema = z.object({
 type Step8Values = z.infer<typeof step8Schema>;
 
 const privacyOptions = [
-  { id: "Public", icon: Eye, title: "Visible to all", desc: "Your photos are clearly visible to your matches." },
-  { id: "Premium", icon: Lock, title: "Premium Only", desc: "Only premium verified users can see your photos." }
+  { id: "Public", icon: Eye, title: "Visible to all", desc: "Your photos are clearly visible to everyone." },
+  { id: "Blurred", icon: Lock, title: "Blur Photos", desc: "Photos are blurred. Only Mutual Matches or Premium users can see them." }
 ];
 
 interface Props {

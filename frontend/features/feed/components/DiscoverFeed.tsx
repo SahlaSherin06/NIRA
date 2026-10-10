@@ -1,5 +1,7 @@
+import { PremiumLimitModal } from "@/components/ui/PremiumLimitModal";
 import React, { useState, useEffect } from "react";
 import { useRecommendations, useInteract, Recommendation } from "../feed.api";
+import { useSession } from "@/features/auth/auth.queries";
 import { ProfileCard } from "./ProfileCard";
 import { FloatingActions } from "./FloatingActions";
 import { Heart } from "lucide-react";
@@ -7,13 +9,15 @@ import { Heart } from "lucide-react";
 export function DiscoverFeed() {
   const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } = useRecommendations();
   const interactMutation = useInteract();
-  
+    const { data: session } = useSession();
+    const isPremium = session?.user?.subscription?.plan === 'premium';
   // Local queue of profiles to show
   const [queue, setQueue] = useState<Recommendation[]>([]);
   const [loadedPages, setLoadedPages] = useState<number>(0);
 
   // Tracking if a card is animating out
-  const [animatingOut, setAnimatingOut] = useState<"like" | "pass" | "block" | "report" | null>(null);
+  const [animatingOut, setAnimatingOut] = useState<"like" | "superlike" | "pass" | "block" | "report" | null>(null);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [isEntering, setIsEntering] = useState(false);
 
   // Bottom scroll detection hooks (must be called unconditionally)
@@ -50,30 +54,39 @@ export function DiscoverFeed() {
     return () => observer.disconnect();
   }, [currentProfile]); // re-run if profile changes
 
-  const handleInteract = React.useCallback(async (action: "like" | "pass" | "block" | "report", reason?: string) => {
-    if (animatingOut || interactMutation.isPending) return;
-    
-    setAnimatingOut(action);
-    
-    try {
-      // Record in backend
-      interactMutation.mutate({ targetId: currentProfile._id, action, reason });
+          const handleInteract = React.useCallback(async (action: "like" | "superlike" | "pass" | "block" | "report", reason?: string) => {
+        if (animatingOut || interactMutation.isPending) return;
+  
+        if (action === "superlike" && !isPremium) {
+          setShowPremiumModal(true);
+          return;
+        }
+  
+      setAnimatingOut(action);
       
-      // Delay to allow CSS animation to play
-      setTimeout(() => {
-        setQueue((prev) => prev.slice(1));
-        setAnimatingOut(null);
-        setIsEntering(true);
-        setTimeout(() => setIsEntering(false), 50); // Small delay to allow DOM update before triggering CSS transition
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }, 300); // 300ms matches the CSS transition
-    } catch (err) {
-      console.error(err);
-      setAnimatingOut(null);
-    }
-  }, [animatingOut, interactMutation, currentProfile, isEntering]);
+      interactMutation.mutate(
+        { targetId: currentProfile._id, action, reason },
+        {
+          onSuccess: () => {
+            setTimeout(() => {
+              setQueue((prev) => prev.slice(1));
+              setAnimatingOut(null);
+              setIsEntering(true);
+              setTimeout(() => setIsEntering(false), 50);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 300);
+          },
+          onError: (err: any) => {
+            setAnimatingOut(null);
+            if (err.response?.status === 403) {
+              setShowPremiumModal(true);
+            }
+          }
+        }
+      );
+    }, [animatingOut, interactMutation, currentProfile, isEntering, isPremium]);
 
-  if (isLoading) {
+    if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-[85vh]">
         <div className="w-12 h-12 border-4 border-brand-900 border-t-transparent rounded-full animate-spin mb-4"></div>
@@ -118,14 +131,20 @@ export function DiscoverFeed() {
         {/* Invisible marker to detect bottom of card */}
         <div ref={bottomRef} className="h-10 w-full absolute bottom-4 pointer-events-none" />
 
-        <FloatingActions 
-          onLike={() => handleInteract("like")} 
-          onPass={() => handleInteract("pass")}
-          disabled={!!animatingOut || interactMutation.isPending}
-          className={isAtBottom ? "absolute bottom-6 left-0" : "fixed bottom-10 left-1/2 -translate-x-1/2 max-w-2xl z-50"}
+                  <FloatingActions 
+            onLike={() => handleInteract("like")} 
+            onSuperLike={() => handleInteract("superlike")} 
+            onPass={() => handleInteract("pass")}
+            disabled={!!animatingOut || interactMutation.isPending}
+            className={isAtBottom ? "absolute bottom-6 left-0 flex justify-center space-x-3 md:space-x-6" : "fixed bottom-10 left-1/2 -translate-x-1/2 flex justify-center space-x-3 md:space-x-6 max-w-2xl z-50"}
+          />
+      
+      {/* Premium Modal */}
+        <PremiumLimitModal 
+          isOpen={showPremiumModal} 
+          onClose={() => setShowPremiumModal(false)} 
         />
       </div>
     </div>
   );
 }
-

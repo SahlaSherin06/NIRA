@@ -1,3 +1,4 @@
+import { Notification } from "../../notifications/models/Notification";
 import { Request, Response, NextFunction } from "express";
 import { asyncHandler } from "../../../utils/asyncHandler";
 import { Conversation } from "../models/Conversation";
@@ -27,42 +28,88 @@ export const getConversations = asyncHandler(async (req: Request, res: Response,
   
   const mutualMatchIds = sentTargetIds.filter(id => receivedActorIds.includes(id));
 
-  // 2. Fetch existing conversations
+  // 2. Get blocked by me & them
+  const blockedByMeInteractions = await Interaction.find({ actorId: userId, action: "block" });
+  const blockedByMeIds = blockedByMeInteractions.map(i => i.targetId.toString());
+
+  const blockedByThemInteractions = await Interaction.find({ targetId: userId, action: "block" });
+  const blockedByThemIds = blockedByThemInteractions.map(i => i.actorId.toString());
+
+  // 3. Fetch existing conversations
   const conversations = await Conversation.find({ participants: userId })
     .populate("lastMessage");
 
-  if (mutualMatchIds.length === 0) {
+  const convoOtherUserIds = conversations
+    .flatMap(c => c.participants.map(p => p.toString()))
+    .filter(p => p !== userId.toString());
+
+  // Union
+  const allVisibleUserIds = Array.from(new Set([...mutualMatchIds, ...convoOtherUserIds]));
+
+  if (allVisibleUserIds.length === 0) {
     return res.status(200).json([]);
   }
 
-  // 3. Fetch user details for all mutual matches
+  // 4. Fetch user details
   const User = require("../../auth/models/User").User;
-  const mutualUsers = await User.find({ _id: { $in: mutualMatchIds } }) as any[];
+  const allUsers = await User.find({ _id: { $in: allVisibleUserIds } }) as any[];
   
   // Fetch profiles safely
   let mutualProfiles: any[] = [];
   if (mongoose.connection.db) {
     mutualProfiles = await mongoose.connection.db.collection("profiles")
-      .find({ userId: { $in: mutualUsers.map((u: any) => u._id) } })
+      .find({ userId: { $in: allUsers.map((u: any) => u._id) } })
       .toArray();
   }
 
-  // 4. Merge mutual matches with conversations
-  const result = mutualUsers.map((user: any) => {
+  // Fetch unread counts
+  const unreadCounts = await require("../models/Message").Message.aggregate([
+    { $match: { senderId: { $ne: new mongoose.Types.ObjectId(userId) }, isRead: false } },
+    { $group: { _id: "$conversationId", count: { $sum: 1 } } }
+  ]);
+
+  const calculateAge = (dobString: string | undefined) => {
+    if (!dobString) return "";
+    const birthDate = new Date(dobString);
+    if (isNaN(birthDate.getTime())) return "";
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  // 5. Merge
+  const result = allUsers.map((user: any) => {
     const convo = conversations.find(c => 
       c.participants.some(p => p.toString() === user._id.toString())
     );
     const profile = mutualProfiles.find(p => p.userId.toString() === user._id.toString());
     
+    const unread = convo 
+      ? unreadCounts.find((u: any) => u._id.toString() === convo._id.toString())?.count || 0 
+      : 0;
+      
+    const isMutual = mutualMatchIds.includes(user._id.toString());
+    const haveISentLike = sentTargetIds.includes(user._id.toString());
+
     return {
       _id: convo ? convo._id : `new_${user._id}`,
       otherUser: {
         _id: user._id,
         name: user.name,
+        age: calculateAge(profile?.dob),
         mainPhoto: profile?.mainPhoto || null
       },
       lastMessage: convo?.lastMessage || null,
-      updatedAt: convo ? convo.updatedAt : new Date(0) // Default old date so active chats bubble up
+      unreadCount: unread,
+      isBlockedByMe: blockedByMeIds.includes(user._id.toString()),
+      isBlockedByThem: blockedByThemIds.includes(user._id.toString()),
+      isMutual,
+      haveISentLike,
+      updatedAt: convo ? convo.updatedAt : new Date(0)
     };
   });
 
@@ -78,17 +125,15 @@ export const getMessages = asyncHandler(async (req: Request, res: Response, next
 
   if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
-  // Check if mutual match exists
-  const isMatch = await checkMutualMatch(userId, targetId);
-  if (!isMatch) {
-    return res.status(403).json({ message: "You can only chat with mutual matches." });
-  }
-
-  let conversation = await Conversation.findOne({
+  const conversation = await Conversation.findOne({
     participants: { $all: [userId, targetId] }
   });
 
   if (!conversation) {
+    const isMatch = await checkMutualMatch(userId, targetId);
+    if (!isMatch) {
+      return res.status(403).json({ message: "You can only chat with mutual matches." });
+    }
     return res.status(200).json({ messages: [] });
   }
 
@@ -112,9 +157,21 @@ export const sendMessage = asyncHandler(async (req: Request, res: Response, next
   if (!userId) return res.status(401).json({ message: "Unauthorized" });
   if (!content) return res.status(400).json({ message: "Content is required" });
 
+  // Check blocks
+  const isBlockedByThem = await Interaction.findOne({ actorId: targetId, targetId: userId, action: "block" });
+  if (isBlockedByThem) {
+    return res.status(403).json({ message: "You cannot message this user." });
+  }
+
+  const isBlockedByMe = await Interaction.findOne({ actorId: userId, targetId: targetId, action: "block" });
+  if (isBlockedByMe) {
+    return res.status(403).json({ message: "You must unblock this user first." });
+  }
+
+  // STRICT MUTUAL MATCH CHECK
   const isMatch = await checkMutualMatch(userId, targetId);
   if (!isMatch) {
-    return res.status(403).json({ message: "You can only chat with mutual matches." });
+    return res.status(403).json({ message: "You can only chat with mutual matches. Send a request to chat again." });
   }
 
   let conversation = await Conversation.findOne({
@@ -127,6 +184,7 @@ export const sendMessage = asyncHandler(async (req: Request, res: Response, next
     });
   }
 
+
   const message = await Message.create({
     conversationId: conversation._id,
     senderId: userId,
@@ -136,6 +194,35 @@ export const sendMessage = asyncHandler(async (req: Request, res: Response, next
   conversation.lastMessage = message._id as mongoose.Types.ObjectId;
   await conversation.save();
 
+  // Create or update a single unread notification for this chat
+  await Notification.findOneAndUpdate(
+    { userId: targetId, type: "new_message", relatedUserId: userId, isRead: false },
+    { message: "Sent you a new message", createdAt: new Date() },
+    { upsert: true }
+  );
+
   // Emitting the message is done inside the Socket layer, but we can return it
   res.status(201).json(message);
+});
+
+export const clearChat = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const userId = (req as any).user?.userId;
+  const targetId = req.params.targetId as string;
+
+  if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+  const conversation = await Conversation.findOne({
+    participants: { $all: [userId, targetId] }
+  });
+
+  if (!conversation) return res.status(404).json({ message: "Chat not found" });
+
+  // Delete all messages in the conversation
+  await Message.deleteMany({ conversationId: conversation._id });
+  
+  // Also clear lastMessage in conversation
+  conversation.lastMessage = undefined as any;
+  await conversation.save();
+
+  res.status(200).json({ message: "Chat cleared successfully" });
 });

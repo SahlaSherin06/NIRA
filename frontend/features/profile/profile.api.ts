@@ -8,6 +8,7 @@ export interface MyProfileResponse {
     gender: string;
     phone: string;
     isOnboardingComplete: boolean;
+    subscription?: { plan: 'free' | 'premium' };
   };
   profile: {
     dob: string;

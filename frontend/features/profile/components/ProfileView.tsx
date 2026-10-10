@@ -2,9 +2,11 @@
 
 import React, { useState, useRef } from "react";
 import { useMyProfile, useUpdateMyProfile } from "../profile.queries";
-import { Settings, Edit3, ShieldCheck, MapPin, Briefcase, GraduationCap, Heart, Camera, Globe, Activity, Image as ImageIcon, Lock, Unlock, Plus, User, ChevronRight } from "lucide-react";
+import { Settings, Edit3, ShieldCheck, MapPin,
+  Crown, Briefcase, GraduationCap, Heart, Camera, Globe, Activity, Image as ImageIcon, Lock, Unlock, Plus, Trash2, X, User, ChevronRight, Ban } from "lucide-react";
 import { EditProfileModal } from "./EditProfileModal";
 import { SecuritySettingsModal } from "./SecuritySettingsModal";
+import { BlockedAccountsModal } from "./BlockedAccountsModal";
 import Link from "next/link";
 
 /**
@@ -16,6 +18,7 @@ export function ProfileView() {
   const { mutate: updateProfile, isPending: isUpdating } = useUpdateMyProfile();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false);
+  const [isBlockedModalOpen, setIsBlockedModalOpen] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleGalleryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -32,6 +35,18 @@ export function ProfileView() {
         });
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveGalleryPhoto = (indexToRemove: number) => {
+    if (data) {
+      const newGallery = (data.profile.galleryPhotos || []).filter((_, idx) => idx !== indexToRemove);
+      updateProfile({
+        profile: {
+          ...data.profile,
+          galleryPhotos: newGallery
+        }
+      });
     }
   };
 
@@ -65,10 +80,14 @@ export function ProfileView() {
           
           <h2 className="text-2xl font-serif font-bold text-gray-900 flex items-center">
             {user.name}, {age}
-            <ShieldCheck className="w-6 h-6 ml-2 text-green-500" />
+            {user.subscription?.plan === 'premium' && (
+              <span className="ml-2 bg-gradient-to-r from-yellow-400 to-yellow-600 p-1.5 rounded-full shadow-lg inline-flex" title="Premium Member">
+                  <Crown className="w-5 h-5 text-white" />
+                </span>
+            )}
           </h2>
           <p className="text-gray-500 font-medium mt-1.5 text-sm flex items-center">
-            <MapPin className="w-4 h-4 mr-1.5 text-brand-400" />
+            <MapPin className="w-4 h-4 mr-1.5 text-brand-400" /> 
             {profile.city}, {profile.state}
           </p>
           
@@ -88,15 +107,6 @@ export function ProfileView() {
             Account Settings
           </h3>
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-green-100 shadow-sm">
-              <div className="flex items-center">
-                <ShieldCheck className="w-5 h-5 text-green-500 mr-3" />
-                <div>
-                  <p className="text-sm font-bold text-gray-900">Verification</p>
-                  <p className="text-xs font-medium text-green-600 mt-0.5">Approved</p>
-                </div>
-              </div>
-            </div>
             <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100 shadow-sm">
               <div className="flex items-center">
                 <Lock className="w-5 h-5 text-gray-400 mr-3" />
@@ -122,17 +132,34 @@ export function ProfileView() {
                 <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-brand-900 transition-colors" />
               </button>
 
-                <Link href="/activity" className="flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100 shadow-sm hover:border-brand-300 transition-colors cursor-pointer block w-full">
+                
+              <button 
+                onClick={() => setIsBlockedModalOpen(true)}
+                className="w-full flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100 shadow-sm hover:border-brand-200 transition-colors group"
+              >
+                <div className="flex items-center text-left">
+                  <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center mr-3">
+                    <Ban className="w-4 h-4 text-red-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-gray-900 group-hover:text-red-500 transition-colors">Blocked Accounts</p>
+                    <p className="text-xs font-medium text-gray-500 mt-0.5">Manage users you have blocked</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-red-500 transition-colors" />
+              </button>
+
+                <Link href="/activity" className="group flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100 shadow-sm hover:border-brand-300 transition-colors cursor-pointer block w-full">
                 <div className="flex items-center">
                   <div className="w-8 h-8 rounded-full bg-brand-50 flex items-center justify-center mr-3">
                     <Activity className="w-4 h-4 text-brand-900" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-gray-900 text-left">Activity Logs</p>
+                    <p className="text-sm font-bold text-gray-900 text-left group-hover:text-brand-900 transition-colors">Activity Logs</p>
                     <p className="text-xs font-medium text-gray-500 mt-0.5 text-left">View your likes, passes & history</p>
                   </div>
                 </div>
-                <span className="px-4 py-1.5 bg-brand-50 text-brand-900 text-xs font-bold rounded-full hover:bg-brand-100 transition-colors inline-block">View</span>
+                <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-brand-900 transition-colors" />
               </Link>
           </div>
         </div>
@@ -291,7 +318,7 @@ export function ProfileView() {
               </div>
               Photo Gallery
             </h3>
-            {profile.galleryPhotos && profile.galleryPhotos.length > 0 && profile.galleryPhotos.length < 4 && (
+            {profile.galleryPhotos && profile.galleryPhotos.length > 0 && profile.galleryPhotos.length < 10 && (
               <button 
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUpdating}
@@ -314,10 +341,18 @@ export function ProfileView() {
           {profile.galleryPhotos && profile.galleryPhotos.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {profile.galleryPhotos.map((photo, idx) => (
-                <div key={idx} className="aspect-square rounded-[1.5rem] overflow-hidden bg-gray-100 border border-gray-100 relative group shadow-sm">
-                  <img src={photo} alt={`Gallery ${idx+1}`} className="w-full h-full object-cover hover:scale-110 transition-transform duration-500" />
-                </div>
-              ))}
+                  <div key={idx} className="aspect-square rounded-[1.5rem] overflow-hidden bg-gray-100 border border-gray-100 relative group shadow-sm">
+                    <img src={photo} alt={`Gallery ${idx+1}`} className="w-full h-full object-cover hover:scale-110 transition-transform duration-500" />
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); handleRemoveGalleryPhoto(idx); }}
+                      disabled={isUpdating}
+                      title="Remove Photo"
+                      className="absolute top-3 right-3 bg-red-500 hover:bg-red-600 text-white p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
             </div>
           ) : (
             <div className="p-10 text-center bg-white rounded-2xl border border-dashed border-indigo-200">
@@ -345,6 +380,9 @@ export function ProfileView() {
     
       {isSecurityModalOpen && (
         <SecuritySettingsModal onClose={() => setIsSecurityModalOpen(false)} />
+      )}
+      {isBlockedModalOpen && (
+        <BlockedAccountsModal onClose={() => setIsBlockedModalOpen(false)} />
       )}
   </div>
   );

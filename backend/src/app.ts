@@ -38,6 +38,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/feed", feedRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/subscription", require("./modules/subscription/routes/subscriptionRoutes").default);
 app.use("/api/notifications", require("./modules/notifications/routes/notificationRoutes").default);
 
 import { errorHandler } from "./middleware/errorHandler";

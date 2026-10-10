@@ -1,8 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import { ChevronLeft, ChevronRight, MapPin, Heart, ShieldCheck, Sparkles, Search, Filter, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, MapPin,
+  Crown, Heart, ShieldCheck, Sparkles, Search, Filter, X, Lock } from "lucide-react";
 import { useExploreData } from "../explore.queries";
+import { useRouter } from "next/navigation";
+import { useSession } from "@/features/auth/auth.queries";
 import { Recommendation } from "@/features/feed/feed.api";
 
 interface ExploreFeedProps {
@@ -17,7 +20,9 @@ const HorizontalScrollContainer = ({ children }: { children: React.ReactNode }) 
   </div>
 );
 
-const ProfileCardSmall = React.memo(({ profile, type, onClick }: { profile: Recommendation, type: 'complete' | 'new', onClick: () => void }) => {
+const ProfileCardSmall = React.memo(({ profile, type, onClick, isPremium }: { profile: Recommendation, type: 'complete' | 'new', onClick: () => void, isPremium: boolean }) => {
+  const router = useRouter();
+  const isBlurred = profile.profile?.photoPrivacy === "Blurred" && !isPremium;
   return (
     <div 
       onClick={onClick}
@@ -44,15 +49,29 @@ const ProfileCardSmall = React.memo(({ profile, type, onClick }: { profile: Reco
         <img 
           src={profile.profile.mainPhoto} 
           alt={profile.name} 
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+          className={`w-full h-full object-cover transition-transform duration-700 ease-out ${isBlurred ? 'blur-2xl scale-110 grayscale-[30%]' : 'group-hover:scale-105'}`}
         />
+        {isBlurred && (
+          <div onClick={(e) => { e.stopPropagation(); router.push('/premium'); }} className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 z-10 cursor-pointer hover:bg-black/40 transition-colors">
+            <div className="w-12 h-12 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center mb-2 border border-white/20">
+              <Lock className="w-6 h-6 text-white" />
+            </div>
+            <p className="text-white font-bold text-sm drop-shadow-md px-4 text-center">Private Photo</p>
+            <button className="mt-2 px-3 py-1 bg-yellow-400 text-yellow-900 text-xs font-bold rounded-full shadow-md hover:bg-yellow-300">Upgrade to view</button>
+          </div>
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
         
         {/* Name overlay */}
         <div className="absolute bottom-4 left-5 text-white">
           <h3 className="text-xl font-bold font-serif shadow-sm flex items-center">
             {profile.name}, {new Date().getFullYear() - new Date(profile.profile.dob).getFullYear()}
-            <ShieldCheck className="w-4 h-4 ml-2 text-yellow-400" />
+              {profile.subscription?.plan === 'premium' && (
+                <div className="ml-2 bg-gradient-to-r from-yellow-400 to-yellow-600 p-0.5 rounded-full shadow-lg" title="Premium Member">
+                  <Crown className="w-3.5 h-3.5 text-white" />
+                </div>
+              )}
+            
           </h3>
           <div className="flex items-center text-white/90 text-sm font-medium mt-1">
             <MapPin className="w-3 h-3 mr-1" />
@@ -90,6 +109,8 @@ const ProfileCardSmall = React.memo(({ profile, type, onClick }: { profile: Reco
  * Renders the UI and handles the internal logic for the Explore Feed.
  */
 export function ExploreFeed({ onProfileClick }: ExploreFeedProps) {
+  const { data: session } = useSession();
+  const isPremium = session?.user?.subscription?.plan === 'premium';
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
 
@@ -165,7 +186,7 @@ export function ExploreFeed({ onProfileClick }: ExploreFeedProps) {
 
             <HorizontalScrollContainer>
               {completeBios.map((profile) => (
-                <ProfileCardSmall 
+                <ProfileCardSmall isPremium={isPremium}
                   key={profile._id} 
                   profile={profile} 
                   type="complete" 
@@ -199,7 +220,7 @@ export function ExploreFeed({ onProfileClick }: ExploreFeedProps) {
 
             <HorizontalScrollContainer>
               {justJoined.map((profile) => (
-                <ProfileCardSmall 
+                <ProfileCardSmall isPremium={isPremium}
                   key={profile._id} 
                   profile={profile} 
                   type="new" 

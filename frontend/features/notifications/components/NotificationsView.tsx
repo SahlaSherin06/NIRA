@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect } from "react";
 import { Bell, Heart, Users, Sparkles, Check, MessageCircle, User as UserIcon } from "lucide-react";
 import { useNotifications, useMarkNotificationsRead } from "../notification.queries";
 import { formatDistanceToNow, isToday, isYesterday } from "date-fns";
@@ -12,6 +12,13 @@ export function NotificationsView() {
   const markAsRead = useMarkNotificationsRead();
 
   // Group notifications
+    useEffect(() => {
+    // Auto mark as read when user visits this page/view
+    if (notifications && notifications.some(n => !n.isRead)) {
+      markAsRead.mutate();
+    }
+  }, [notifications]);
+
   const groupedNotifications = useMemo(() => {
     if (!notifications) return { new: [], earlier: [] };
     
@@ -41,7 +48,8 @@ export function NotificationsView() {
 
   const renderNotification = (notification: NotificationData) => {
     const isMatch = notification.type === 'match';
-    const isLike = notification.type === 'interest_received';
+    const isLike = notification.type === 'interest_received' || notification.type === 'superlike_received';
+    const isMessage = notification.type === 'new_message';
     const isSystem = notification.type === 'system';
     const user = notification.relatedUser;
 
@@ -71,7 +79,8 @@ export function NotificationsView() {
               isLike ? 'bg-gradient-to-br from-brand-400 to-brand-600 text-white' :
               'bg-gray-100 text-gray-500'
             }`}>
-              {isMatch ? <Users className="w-6 h-6" /> : 
+                            {isMatch ? <Users className="w-6 h-6" /> : 
+               notification.type === 'superlike_received' ? <Sparkles className="w-6 h-6 text-yellow-300" /> :
                isLike ? <Heart className="w-6 h-6" /> : 
                user ? <UserIcon className="w-6 h-6" /> :
                <Sparkles className="w-6 h-6" />}
@@ -79,12 +88,14 @@ export function NotificationsView() {
           )}
 
           {/* Badge Icon Overlay */}
-          <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-white flex items-center justify-center ${
+                    <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-white flex items-center justify-center ${
             isMatch ? 'bg-green-500 text-white' : 
+            notification.type === 'superlike_received' ? 'bg-yellow-500 text-white' :
             isLike ? 'bg-brand-900 text-white' :
             'bg-blue-500 text-white'
           }`}>
             {isMatch ? <Users className="w-3 h-3" /> : 
+             notification.type === 'superlike_received' ? <Sparkles className="w-3 h-3" /> :
              isLike ? <Heart className="w-3 h-3" /> : 
              <Bell className="w-3 h-3" />}
           </div>
@@ -104,7 +115,7 @@ export function NotificationsView() {
         {user && (
           <div className="w-full sm:w-auto flex space-x-2 pt-2 sm:pt-0">
             {isLike && (
-              <Link href={`/profile/${user._id}`} className="flex-1 sm:flex-none px-4 py-2 bg-brand-50 hover:bg-brand-100 text-brand-900 text-xs font-bold rounded-full transition-colors text-center whitespace-nowrap">
+              <Link href="/matches" className="flex-1 sm:flex-none px-4 py-2 bg-brand-50 hover:bg-brand-100 text-brand-900 text-xs font-bold rounded-full transition-colors text-center whitespace-nowrap">
                 View Profile
               </Link>
             )}
@@ -130,16 +141,7 @@ export function NotificationsView() {
           <h1 className="text-3xl md:text-4xl font-extrabold font-serif text-gray-900 tracking-tight">Notifications</h1>
           <p className="text-gray-500 mt-2 font-medium">Keep track of your latest matches and profile activity.</p>
         </div>
-        {hasUnread && (
-          <button 
-            onClick={handleMarkAsRead}
-            disabled={markAsRead.isPending}
-            className="px-5 py-2.5 bg-white border border-gray-200 hover:border-brand-200 hover:bg-brand-50 text-gray-700 hover:text-brand-900 text-sm font-bold rounded-full transition-all flex items-center shadow-sm hover:shadow-md active:scale-95"
-          >
-            <Check className="w-4 h-4 mr-2" />
-            Mark all as read
-          </button>
-        )}
+        
       </div>
 
       <div className="space-y-8">

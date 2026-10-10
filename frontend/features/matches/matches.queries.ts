@@ -70,3 +70,18 @@ export const useReportInterest = () => {
   });
 };
 
+
+/**
+ * Function: useBlockInterest
+ * Executes the core operations and logic for use block interest.
+ */
+export const useBlockInterest = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (data: { targetId: string }) => interactApi({ targetId: data.targetId, action: "block" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: matchesKeys.all });
+    },
+  });
+};

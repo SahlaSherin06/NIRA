@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Heart, Search, MessageCircle, Bell, User, Globe, LogOut, Compass } from "lucide-react";
+import { Heart, Search, MessageCircle, Bell, User, Globe, LogOut, Compass, Crown } from "lucide-react";
 import { useSession } from "@/features/auth/auth.queries";
 import { useNotifications } from "@/features/notifications/notification.queries";
 import { useMyProfile } from "@/features/profile/profile.queries";
@@ -25,6 +25,7 @@ export function DashboardNavbar() {
     { name: "Explore", href: "/explore", icon: Compass },
     { name: "Matches", href: "/matches", icon: Search },
     { name: "Messages", href: "/messages", icon: MessageCircle },
+    { name: "Premium", href: "/premium", icon: Crown },
   ];
 
   const handleSignOut = async () => {

@@ -2,7 +2,7 @@ import { api } from "@/lib/axios";
 
 export interface NotificationData {
   _id: string;
-  type: "interest_received" | "match" | "system";
+  type: "interest_received" | "match" | "system" | "new_message";
   message: string;
   isRead: boolean;
   createdAt: string;

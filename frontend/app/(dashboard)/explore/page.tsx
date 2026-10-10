@@ -1,9 +1,11 @@
 "use client";
+import { PremiumLimitModal } from "@/components/ui/PremiumLimitModal";
 
 import { useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useSession } from "@/features/auth/auth.queries";
 import { ExploreFeed } from "@/features/explore/components/ExploreFeed";
 import { Recommendation, useInteract } from "@/features/feed/feed.api";
 import { exploreKeys } from "@/features/explore/explore.queries";
@@ -19,26 +21,45 @@ const FloatingActions = dynamic(() => import("@/features/feed/components/Floatin
  */
 export default function ExplorePage() {
   const queryClient = useQueryClient();
+  const { data: session } = useSession();
+  const isPremium = session?.user?.subscription?.plan === 'premium';
   const interactMutation = useInteract();
 
   const [selectedProfile, setSelectedProfile] = useState<Recommendation | null>(null);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
 
-  const handleInteract = useCallback((action: "like" | "pass" | "block" | "report", reason?: string) => {
+    const handleInteract = useCallback((action: "like" | "superlike" | "pass" | "block" | "report", reason?: string) => {
     if (!selectedProfile || interactMutation.isPending) return;
 
-    interactMutation.mutate({ targetId: selectedProfile._id, action, reason });
+    if (action === "superlike" && !isPremium) {
+      setShowPremiumModal(true);
+      return;
+    }
 
-    queryClient.setQueryData(exploreKeys.all, (oldData: ExploreResponse | undefined) => {
-      if (!oldData) return oldData;
-      return {
-        ...oldData,
-        completeBios: oldData.completeBios.filter(p => p._id !== selectedProfile._id),
-        justJoined: oldData.justJoined.filter(p => p._id !== selectedProfile._id),
-      };
-    });
+
+        interactMutation.mutate(
+      { targetId: selectedProfile._id, action, reason },
+      {
+        onError: (err: any) => {
+          if (err.response?.status === 403 && (err.response?.data?.message === "LIMIT_REACHED" || err.response?.data?.message === "UPGRADE_REQUIRED")) {
+            setShowPremiumModal(true);
+          }
+        },
+        onSuccess: () => {
+          queryClient.setQueryData(exploreKeys.all, (oldData: ExploreResponse | undefined) => {
+            if (!oldData) return oldData;
+            return {
+              ...oldData,
+              completeBios: oldData.completeBios.filter(p => p._id !== selectedProfile._id),
+              justJoined: oldData.justJoined.filter(p => p._id !== selectedProfile._id),
+            };
+          });
+        }
+      }
+    );
 
     setSelectedProfile(null);
-  }, [selectedProfile, interactMutation, queryClient]);
+  }, [selectedProfile, interactMutation, queryClient, isPremium]);
 
   return (
     <div className="w-full max-w-7xl mx-auto flex flex-col relative">
@@ -64,14 +85,21 @@ export default function ExplorePage() {
               />
               <FloatingActions 
                 onLike={() => handleInteract("like")} 
+                onSuperLike={() => handleInteract("superlike")} 
                 onPass={() => handleInteract("pass")}
                 disabled={interactMutation.isPending}
-                className="absolute bottom-6 left-1/2 -translate-x-1/2 max-w-2xl"
+                className="absolute bottom-6 left-1/2 -translate-x-1/2 flex justify-center space-x-3 md:space-x-6 max-w-2xl"
               />
             </div>
           </div>
-        </div>
+                </div>
       )}
+
+      {/* Premium Modal */}
+      <PremiumLimitModal 
+        isOpen={showPremiumModal} 
+        onClose={() => setShowPremiumModal(false)} 
+      />
     </div>
   );
 }

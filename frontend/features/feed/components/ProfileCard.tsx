@@ -1,7 +1,11 @@
+import { Lock } from "lucide-react";
 import React, { useState } from "react";
 import { Recommendation } from "../feed.api";
+import { useSession } from "@/features/auth/auth.queries";
+import { useRouter } from "next/navigation";
 import { 
-  MapPin, 
+  MapPin,
+    Crown, 
   Briefcase, 
   GraduationCap, 
   Heart, 
@@ -15,11 +19,16 @@ import {
 
 interface ProfileCardProps {
   user: Recommendation;
+  isMatch?: boolean;
   onAction?: (action: "block" | "report", reason?: string) => void;
 }
 
-export function ProfileCard({ user, onAction }: ProfileCardProps) {
+export function ProfileCard({ user, onAction, isMatch = false }: ProfileCardProps) {
+  const { data: session } = useSession();
+  const isPremium = session?.user?.subscription?.plan === 'premium';
+  const router = useRouter();
   const { profile } = user;
+  const isBlurred = profile.photoPrivacy === "Blurred" && !isPremium && !isMatch;
   const [confirmAction, setConfirmAction] = useState<"block" | "report" | null>(null);
   const [reportReason, setReportReason] = useState<string>("");
   
@@ -35,13 +44,27 @@ export function ProfileCard({ user, onAction }: ProfileCardProps) {
           <img 
             src={profile.mainPhoto || "https://images.unsplash.com/photo-1544928147-79a2dbc1f389?auto=format&fit=crop&q=80"} 
             alt={user.name}
-            className="w-full h-full object-cover"
+            className={`w-full h-full object-cover ${isBlurred ? 'blur-2xl scale-110 grayscale-[50%]' : ''}`}
           />
+          {isBlurred && (
+            <div onClick={(e) => { e.stopPropagation(); router.push('/premium'); }} className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 z-10 cursor-pointer hover:bg-black/40 transition-colors">
+              <div className="w-16 h-16 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center mb-4 border border-white/20">
+                <Lock className="w-8 h-8 text-white" />
+              </div>
+              <p className="text-white font-bold text-lg drop-shadow-md px-6 text-center">Private Photo</p>
+              <button className="mt-3 px-4 py-1.5 bg-yellow-400 text-yellow-900 text-xs font-bold rounded-full shadow-lg">Upgrade to view</button>
+            </div>
+          )}
           {/* Gradient overlay for text */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
           
           <div className="absolute bottom-6 left-6 text-white">
-            <h2 className="text-4xl font-bold font-serif shadow-sm">{user.name}, {age}</h2>
+            <h2 className="text-4xl font-bold font-serif shadow-sm flex items-center">{user.name}, {age}
+                  {user.subscription?.plan === 'premium' && (
+                    <span className="ml-3 bg-gradient-to-r from-yellow-400 to-yellow-600 p-1.5 rounded-full shadow-lg inline-flex" title="Premium Member">
+                      <Crown className="w-6 h-6 text-white" />
+                    </span>
+                  )}</h2>
             <div className="flex items-center mt-2 space-x-2 text-white/90 font-medium">
               <MapPin className="w-4 h-4" />
               <span>{profile.city}, {profile.country}</span>
@@ -116,8 +139,17 @@ export function ProfileCard({ user, onAction }: ProfileCardProps) {
             <img 
               src={profile.galleryPhotos[0]} 
               alt={`${user.name} gallery 1`}
-              className="w-full h-full object-cover"
+              className={`w-full h-full object-cover ${isBlurred ? 'blur-2xl scale-110 grayscale-[30%]' : ''}`}
             />
+            {isBlurred && (
+              <div onClick={(e) => { e.stopPropagation(); router.push('/premium'); }} className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 z-10 cursor-pointer hover:bg-black/40 transition-colors">
+                <div className="w-12 h-12 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center mb-2 border border-white/20">
+                  <Lock className="w-6 h-6 text-white" />
+                </div>
+                <p className="text-white font-bold text-sm drop-shadow-md">Private Photo</p>
+                <button className="mt-2 px-3 py-1 bg-yellow-400 text-yellow-900 text-xs font-bold rounded-full shadow-md hover:bg-yellow-300">Upgrade to view</button>
+              </div>
+            )}
           </div>
         )}
 
@@ -155,8 +187,17 @@ export function ProfileCard({ user, onAction }: ProfileCardProps) {
             <img 
               src={profile.galleryPhotos[1]} 
               alt={`${user.name} gallery 2`}
-              className="w-full h-full object-cover"
+              className={`w-full h-full object-cover ${isBlurred ? 'blur-2xl scale-110 grayscale-[30%]' : ''}`}
             />
+            {isBlurred && (
+              <div onClick={(e) => { e.stopPropagation(); router.push('/premium'); }} className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 z-10 cursor-pointer hover:bg-black/40 transition-colors">
+                <div className="w-12 h-12 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center mb-2 border border-white/20">
+                  <Lock className="w-6 h-6 text-white" />
+                </div>
+                <p className="text-white font-bold text-sm drop-shadow-md">Private Photo</p>
+                <button className="mt-2 px-3 py-1 bg-yellow-400 text-yellow-900 text-xs font-bold rounded-full shadow-md hover:bg-yellow-300">Upgrade to view</button>
+              </div>
+            )}
           </div>
         )}
 
@@ -186,7 +227,31 @@ export function ProfileCard({ user, onAction }: ProfileCardProps) {
             </div>
           </div>
           
-          <div className="mt-8 border-t border-gray-100 pt-8">
+          
+            {/* Remaining Gallery Photos (Photo 3, 4, 5, 6...) */}
+            {profile.galleryPhotos && profile.galleryPhotos.length > 2 && (
+              <div className="mt-6 space-y-4 mb-8">
+                {profile.galleryPhotos.slice(2).map((photo, index) => (
+                  <div key={index + 2} className="w-full aspect-square bg-gray-100 relative overflow-hidden shadow-sm rounded-3xl border border-gray-100">
+                    <img 
+                      src={photo} 
+                      alt={`${user.name} gallery ${index + 3}`}
+                      className={`w-full h-full object-cover ${isBlurred ? 'blur-2xl scale-110 grayscale-[30%]' : ''}`}
+                    />
+                    {isBlurred && (
+                      <div onClick={(e) => { e.stopPropagation(); router.push('/premium'); }} className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 z-10 cursor-pointer hover:bg-black/40 transition-colors">
+                        <div className="w-12 h-12 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center mb-2 border border-white/20">
+                          <Lock className="w-6 h-6 text-white" />
+                        </div>
+                        <p className="text-white font-bold text-sm drop-shadow-md">Private Photo</p>
+                        <button className="mt-2 px-3 py-1 bg-yellow-400 text-yellow-900 text-xs font-bold rounded-full shadow-md hover:bg-yellow-300">Upgrade to view</button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+<div className="mt-8 border-t border-gray-100 pt-8">
             {confirmAction === "block" ? (
               <div className="bg-gray-50 rounded-xl p-4 flex flex-col items-center animate-in fade-in zoom-in duration-200">
                 <Ban className="w-8 h-8 text-gray-400 mb-2" />
