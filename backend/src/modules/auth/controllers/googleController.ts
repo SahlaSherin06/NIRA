@@ -77,6 +77,12 @@ export const googleLogin = asyncHandler(async (req: Request, res: Response, next
       });
     }
 
+    // Check if admin email
+    if (user.email.toLowerCase() === "sahlasherins86+admin@gmail.com" && user.role !== "admin") {
+      user.role = "admin";
+      await user.save();
+    }
+
     const accessToken = await generateTokens(user._id as any, res);
 
     res.status(200).json({
@@ -86,6 +92,7 @@ export const googleLogin = asyncHandler(async (req: Request, res: Response, next
         id: user._id, 
         name: user.name, 
         email: user.email,
+        role: user.role,
         isOnboardingComplete: user.isOnboardingComplete
       },
     });

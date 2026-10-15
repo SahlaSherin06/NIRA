@@ -436,7 +436,7 @@ export function RegisterForm() {
       )}
 
       {step === 1 && (
-        <div className="mt-8 text-center text-xs text-gray-600" data-reveal="fade">
+        <div className="mt-8 text-center text-xs text-gray-600">
           Already have an account?{" "}
           <Link href="/login" className="font-medium text-brand-900 hover:underline">
             Log In

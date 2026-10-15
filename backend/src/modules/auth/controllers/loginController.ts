@@ -109,6 +109,12 @@ export const loginStep3Password = asyncHandler(async (req: Request, res: Respons
     await redis.del(passedKey);
     const accessToken = await generateTokens(user._id as any, res);
 
+    // Check if admin email
+    if (user.email.toLowerCase() === "sahlasherins86+admin@gmail.com" && user.role !== "admin") {
+      user.role = "admin";
+      await user.save();
+    }
+
     res.status(200).json({
       message: "Logged in successfully",
       accessToken,
@@ -116,6 +122,7 @@ export const loginStep3Password = asyncHandler(async (req: Request, res: Respons
         id: user._id, 
         name: user.name, 
         email: user.email,
+        role: user.role,
         isOnboardingComplete: user.isOnboardingComplete 
       },
     });

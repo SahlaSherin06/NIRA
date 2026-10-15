@@ -2,7 +2,7 @@ import { api } from "@/lib/axios";
 import { Recommendation } from "../feed/feed.api";
 
 export interface MatchProfile extends Recommendation {
-  matchedAt: string; // ISO date string
+  matchedAt: string; 
 }
 
 export interface MatchesResponse {

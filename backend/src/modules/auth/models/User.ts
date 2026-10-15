@@ -9,6 +9,8 @@ export interface IUser extends Document {
   isEmailVerified: boolean;
   isOnboardingComplete: boolean;
   isPhotoBlurred: boolean;
+  role: 'user' | 'admin';
+  isBanned?: boolean;
   subscription: {
     plan: 'free' | 'premium';
     expiresAt?: Date;
@@ -48,6 +50,15 @@ const userSchema: Schema = new Schema(
       default: false,
     },
       isOnboardingComplete: {
+      type: Boolean,
+      default: false,
+    },
+    role: {
+      type: String,
+      enum: ['user', 'admin'],
+      default: 'user',
+    },
+    isBanned: {
       type: Boolean,
       default: false,
     },

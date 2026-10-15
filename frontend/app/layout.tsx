@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ScrollAnimations from "@/components/animations/ScrollAnimations";
@@ -45,4 +45,3 @@ export default function RootLayout({
     </html>
   );
 }
-

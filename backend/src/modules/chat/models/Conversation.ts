@@ -15,7 +15,6 @@ const ConversationSchema = new Schema<IConversation>(
   { timestamps: true }
 );
 
-// Compound index to quickly find if a conversation exists between two users
 ConversationSchema.index({ participants: 1 });
 
 export const Conversation = (mongoose.models.Conversation as mongoose.Model<IConversation>) || mongoose.model<IConversation>("Conversation", ConversationSchema);

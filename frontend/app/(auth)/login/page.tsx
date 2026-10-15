@@ -16,7 +16,9 @@ export default function Page() {
     if (isPending) return;
 
     if (session) {
-      if (session.user?.isOnboardingComplete) {
+      if (session.user?.role === "admin" || session.user?.email === "sahlasherins86+admin@gmail.com") {
+        router.replace("/admin/dashboard");
+      } else if (session.user?.isOnboardingComplete) {
         router.replace("/home");
       } else {
         router.replace("/onboarding");

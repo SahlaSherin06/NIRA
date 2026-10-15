@@ -28,7 +28,6 @@ export function useSendMessage() {
   return useMutation({
     mutationFn: sendMessageApi,
     onSuccess: (data, variables) => {
-      // Optimistically add message to cache or invalidate
       queryClient.invalidateQueries({ queryKey: chatKeys.messages(variables.targetId) });
       queryClient.invalidateQueries({ queryKey: chatKeys.conversations() });
     },

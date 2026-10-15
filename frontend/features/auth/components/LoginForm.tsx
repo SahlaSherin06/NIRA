@@ -42,10 +42,16 @@ export function LoginForm() {
   // Step 3: Password UI state
   const [showPassword, setShowPassword] = useState(false);
 
-    // If user is already logged in, redirect them to home
+    // If user is already logged in, redirect based on role
   useEffect(() => {
     if (session) {
-      router.replace("/home");
+      if (session.user?.role === "admin" || session.user?.email === "sahlasherins86+admin@gmail.com") {
+        router.replace("/admin/dashboard");
+      } else if (session.user?.isOnboardingComplete) {
+        router.replace("/home");
+      } else {
+        router.replace("/onboarding");
+      }
     }
   }, [session, router]);
 
@@ -345,7 +351,7 @@ export function LoginForm() {
       )}
 
       {step === 1 && (
-        <div className="mt-8 text-center text-sm border-t border-gray-100 pt-6" data-reveal="fade">
+        <div className="mt-8 text-center text-sm border-t border-gray-100 pt-6">
           <span className="text-gray-500">Don't have an account? </span>
           <Link href="/register" className="font-bold text-brand-900 hover:text-brand-800 transition-colors">
             Create Profile
