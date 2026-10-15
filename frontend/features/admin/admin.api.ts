@@ -107,14 +107,43 @@ export interface AdminReport {
     _id: string;
     name: string;
     email: string;
+    gender?: string;
     isBanned?: boolean;
+    warningsCount?: number;
+    warningNotes?: Array<{
+      message: string;
+      date: string;
+    }>;
     subscription?: {
       plan: string;
     };
   };
+  targetProfile?: {
+    mainPhoto?: string | null;
+    city?: string | null;
+    state?: string | null;
+    profession?: string | null;
+    religion?: string | null;
+    dob?: string | null;
+  } | null;
+  targetReportCount?: number;
   action: string;
   reason?: string;
+  status: "pending" | "warned" | "resolved" | "dismissed";
+  adminNote?: string;
+  resolvedAt?: string;
   createdAt: string;
+}
+
+export interface AdminReportsResponse {
+  reports: AdminReport[];
+  metrics: {
+    total: number;
+    pending: number;
+    warned: number;
+    resolved: number;
+    dismissed: number;
+  };
 }
 
 export const getAdminStatsApi = async (): Promise<AdminStats> => {
@@ -142,7 +171,135 @@ export const togglePremiumUserApi = async (id: string): Promise<{ message: strin
   return res.data;
 };
 
-export const getAdminReportsApi = async (): Promise<{ reports: AdminReport[] }> => {
-  const res = await api.get("/admin/reports");
+export const getAdminReportsApi = async (params?: {
+  search?: string;
+  status?: string;
+}): Promise<AdminReportsResponse> => {
+  const res = await api.get("/admin/reports", { params });
   return res.data;
 };
+
+export const warnReportUserApi = async (data: {
+  reportId: string;
+  message: string;
+}): Promise<{ message: string; report: AdminReport }> => {
+  const res = await api.patch(`/admin/reports/${data.reportId}/warn`, { message: data.message });
+  return res.data;
+};
+
+export const dismissAdminReportApi = async (data: {
+  reportId: string;
+  note?: string;
+}): Promise<{ message: string; report: AdminReport }> => {
+  const res = await api.patch(`/admin/reports/${data.reportId}/dismiss`, { note: data.note });
+  return res.data;
+};
+
+export const resolveAdminReportApi = async (data: {
+  reportId: string;
+  note?: string;
+}): Promise<{ message: string; report: AdminReport }> => {
+  const res = await api.patch(`/admin/reports/${data.reportId}/resolve`, { note: data.note });
+  return res.data;
+};
+
+// --- Subscriptions & Revenue Types & API ---
+export interface AdminSubscriber {
+  _id: string;
+  name: string;
+  email: string;
+  gender: string;
+  isBanned: boolean;
+  createdAt: string;
+  photo?: string | null;
+  profile?: {
+    city?: string;
+    state?: string;
+    profession?: string;
+    religion?: string;
+    dob?: string;
+    mainPhoto?: string;
+  } | null;
+  subscription: {
+    plan: "free" | "premium";
+    duration?: "1_month" | "3_months" | "6_months" | "lifetime" | null;
+    amountPaid?: number;
+    planLabel?: string;
+    startDate: string;
+    expiresAt?: string | null;
+    source: "razorpay" | "admin_grant" | "dev_mode";
+    adminNote?: string | null;
+    daysRemaining?: number | null;
+    status: "active" | "expiring_soon" | "expired";
+  };
+}
+
+export interface AdminSubscriptionsResponse {
+  subscribers: AdminSubscriber[];
+  total: number;
+  page: number;
+  pages: number;
+  metrics: {
+    activeVip: number;
+    mrr: number;
+    conversionRate: number;
+    expiringSoon: number;
+    expired: number;
+    totalUsers: number;
+  };
+}
+
+export interface EligibleUserForGrant {
+  _id: string;
+  name: string;
+  email: string;
+  gender?: string;
+  photo?: string | null;
+  currentPlan: string;
+  expiresAt?: string | null;
+}
+
+export const getAdminSubscriptionsApi = async (params?: {
+  search?: string;
+  status?: string;
+  page?: number;
+  limit?: number;
+}): Promise<AdminSubscriptionsResponse> => {
+  const res = await api.get("/admin/subscriptions", { params });
+  return res.data;
+};
+
+export const getEligibleUsersForGrantApi = async (search?: string): Promise<{ users: EligibleUserForGrant[] }> => {
+  const res = await api.get("/admin/subscriptions/eligible-users", { params: { search } });
+  return res.data;
+};
+
+export const grantVipAccessApi = async (data: {
+  userId: string;
+  duration: "1_month" | "3_months" | "6_months" | "lifetime";
+  note?: string;
+}): Promise<{ message: string; user: any }> => {
+  const res = await api.post("/admin/subscriptions/grant", data);
+  return res.data;
+};
+
+export const extendVipSubscriptionApi = async (data: {
+  subscriberId: string;
+  days: number;
+  note?: string;
+}): Promise<{ message: string; user: any }> => {
+  const res = await api.patch(`/admin/subscriptions/${data.subscriberId}/extend`, {
+    days: data.days,
+    note: data.note,
+  });
+  return res.data;
+};
+
+export const revokeVipSubscriptionApi = async (data: {
+  subscriberId: string;
+  note?: string;
+}): Promise<{ message: string; user: any }> => {
+  const res = await api.patch(`/admin/subscriptions/${data.subscriberId}/revoke`, { note: data.note });
+  return res.data;
+};
+

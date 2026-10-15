@@ -1,81 +1,157 @@
 "use client";
 
-import { useAdminStats, useAdminUsers } from "@/features/admin/admin.queries";
-import { Crown, Sparkles, TrendingUp, CheckCircle, ShieldCheck } from "lucide-react";
+import { useState } from "react";
+import { Crown, Sparkles, PlusCircle } from "lucide-react";
+import {
+  useAdminSubscriptions,
+  useRevokeVipSubscription,
+  useToggleBanUser,
+} from "@/features/admin/admin.queries";
+import { AdminSubscriber, AdminUser } from "@/features/admin/admin.api";
+import { AdminSubscriptionsMetrics } from "@/features/admin/components/subscriptions/AdminSubscriptionsMetrics";
+import { AdminSubscriptionsFilterBar } from "@/features/admin/components/subscriptions/AdminSubscriptionsFilterBar";
+import { AdminSubscriptionsTable } from "@/features/admin/components/subscriptions/AdminSubscriptionsTable";
+import { AdminGrantVipModal } from "@/features/admin/components/subscriptions/AdminGrantVipModal";
+import { AdminExtendVipModal } from "@/features/admin/components/subscriptions/AdminExtendVipModal";
+import { AdminUserProfileModal } from "@/features/admin/components/users/AdminUserProfileModal";
 
 export default function AdminSubscriptionsPage() {
-  const { data: stats } = useAdminStats();
-  const { data: premiumUsers, isLoading } = useAdminUsers({ filter: "premium", limit: 20 } as any);
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("active");
+
+  // Modal States
+  const [isGrantModalOpen, setIsGrantModalOpen] = useState(false);
+  const [extendingSubscriber, setExtendingSubscriber] = useState<AdminSubscriber | null>(null);
+  const [inspectedUser, setInspectedUser] = useState<AdminUser | null>(null);
+
+  // Queries & Mutations
+  const { data, isLoading } = useAdminSubscriptions({ search, status });
+  const revokeMutation = useRevokeVipSubscription();
+  const toggleBanMutation = useToggleBanUser();
+
+  // Handlers
+  const handleExtendVip = (subscriber: AdminSubscriber) => {
+    setExtendingSubscriber(subscriber);
+  };
+
+  const handleRevokeVip = (subscriber: AdminSubscriber) => {
+    if (
+      window.confirm(
+        `Are you sure you want to revoke VIP membership for ${subscriber.name}? Their account will be downgraded to the Free tier immediately.`
+      )
+    ) {
+      revokeMutation.mutate({
+        subscriberId: subscriber._id,
+        note: "Revoked manually by Admin from Subscriptions dashboard",
+      });
+    }
+  };
+
+  const handleViewProfile = (userId: string) => {
+    const subscriber = data?.subscribers.find((s) => s._id === userId);
+    if (!subscriber) return;
+
+    const constructedUser: AdminUser = {
+      _id: subscriber._id,
+      name: subscriber.name,
+      email: subscriber.email,
+      gender: subscriber.gender || "Not specified",
+      createdFor: "Self",
+      isEmailVerified: true,
+      isOnboardingComplete: true,
+      isBanned: subscriber.isBanned || false,
+      photo: subscriber.photo || subscriber.profile?.mainPhoto || null,
+      galleryPhotos: subscriber.photo ? [subscriber.photo] : [],
+      profile: subscriber.profile || undefined,
+      subscription: {
+        plan: subscriber.subscription.plan,
+      },
+      createdAt: subscriber.createdAt,
+    };
+
+    setInspectedUser(constructedUser);
+  };
+
+  const handleToggleBanModal = (id: string) => {
+    toggleBanMutation.mutate(id, {
+      onSuccess: () => {
+        if (inspectedUser && inspectedUser._id === id) {
+          setInspectedUser((prev) => (prev ? { ...prev, isBanned: !prev.isBanned } : null));
+        }
+      },
+    });
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Top Banner */}
-      <div className="bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 rounded-2xl p-5 sm:p-6 text-white shadow-md shadow-amber-600/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="space-y-6 animate-in fade-in duration-300">
+      {/* 1. Header Section with Grant VIP Action */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
         <div>
-          <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-white/20 text-xs font-semibold text-white mb-2">
-            <Crown className="w-3.5 h-3.5" />
-            <span>VIP Subscriptions Overview</span>
+          <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-brand-50 border border-brand-200/80 text-xs font-semibold text-brand-900 mb-1.5">
+            <Crown className="w-3.5 h-3.5 text-brand-900" />
+            <span>VIP Revenue & Membership</span>
           </div>
-          <h2 className="text-xl sm:text-2xl font-bold font-sans tracking-tight text-white">
-            Premium Membership Base
+          <h2 className="text-xl sm:text-2xl font-bold font-sans tracking-tight text-gray-900">
+            VIP Subscriptions Management
           </h2>
-          <p className="text-xs sm:text-sm text-amber-100 mt-1">
-            Track active paid plans, unlimited swipes access, and VIP accounts.
+          <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
+            Monitor paid subscriber revenue, track remaining validities, and grant VIP passes.
           </p>
         </div>
 
-        <div className="bg-white/10 backdrop-blur-md rounded-xl p-3.5 border border-white/20 text-center min-w-[130px]">
-          <div className="text-2xl font-bold font-sans">{stats?.premiumUsers ?? 0}</div>
-          <div className="text-xs text-amber-100 font-medium">Active VIP Members</div>
+        {/* Grant VIP Access Button */}
+        <div className="flex items-center space-x-2 shrink-0">
+          <button
+            onClick={() => setIsGrantModalOpen(true)}
+            className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl bg-brand-900 hover:bg-brand-800 active:scale-98 text-white text-xs sm:text-sm font-bold shadow-xs hover:shadow-md transition-all cursor-pointer"
+          >
+            <PlusCircle className="w-4 h-4 text-brand-100" />
+            <span>Grant VIP Access</span>
+          </button>
         </div>
       </div>
 
-      {/* Premium Users List */}
-      <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-xs">
-        <h3 className="font-sans font-bold text-base text-gray-900 mb-4">
-          Subscribed Members
-        </h3>
+      {/* 2. Top KPI Revenue & Plan Metrics (Overview Cards) */}
+      <AdminSubscriptionsMetrics metrics={data?.metrics} isLoading={isLoading} />
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-gray-600">
-            <thead className="bg-gray-50/70 text-[11px] uppercase tracking-wider font-semibold text-gray-500 border-b border-gray-100">
-              <tr>
-                <th className="py-3 px-4">Member</th>
-                <th className="py-3 px-4">Plan Status</th>
-                <th className="py-3 px-4">Expires At</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={3} className="py-8 text-center text-gray-400">Loading subscriptions...</td>
-                </tr>
-              ) : premiumUsers?.users.length === 0 ? (
-                <tr>
-                  <td colSpan={3} className="py-8 text-center text-gray-400">No active premium users yet.</td>
-                </tr>
-              ) : (
-                premiumUsers?.users.map((user) => (
-                  <tr key={user._id} className="hover:bg-brand-50/30">
-                    <td className="py-3.5 px-4 font-bold text-gray-900">{user.name} ({user.email})</td>
-                    <td className="py-3.5 px-4">
-                      <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                        <Crown className="w-3 h-3 text-amber-500" />
-                        <span>Premium</span>
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 text-xs text-gray-500">
-                      {user.subscription?.expiresAt
-                        ? new Date(user.subscription.expiresAt).toLocaleDateString()
-                        : "Active (Lifetime / Dev)"}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {/* 3. Search & Filter Bar */}
+      <AdminSubscriptionsFilterBar
+        search={search}
+        onSearchChange={setSearch}
+        status={status}
+        onStatusChange={setStatus}
+        totalResults={data?.total}
+      />
+
+      {/* 4. Detailed Subscribers Table */}
+      <AdminSubscriptionsTable
+        subscribers={data?.subscribers || []}
+        isLoading={isLoading}
+        onExtendVip={handleExtendVip}
+        onRevokeVip={handleRevokeVip}
+        onViewProfile={handleViewProfile}
+        isActionPending={revokeMutation.isPending}
+      />
+
+      {/* 5. Modals */}
+      <AdminGrantVipModal
+        isOpen={isGrantModalOpen}
+        onClose={() => setIsGrantModalOpen(false)}
+      />
+
+      <AdminExtendVipModal
+        isOpen={!!extendingSubscriber}
+        onClose={() => setExtendingSubscriber(null)}
+        subscriber={extendingSubscriber}
+      />
+
+      <AdminUserProfileModal
+        user={inspectedUser}
+        isOpen={!!inspectedUser}
+        onClose={() => setInspectedUser(null)}
+        onToggleBan={handleToggleBanModal}
+        isBanPending={toggleBanMutation.isPending}
+      />
     </div>
   );
 }

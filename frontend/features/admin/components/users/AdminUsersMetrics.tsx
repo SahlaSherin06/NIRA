@@ -40,13 +40,13 @@ export function AdminUsersMetrics({ metrics, isLoading }: AdminUsersMetricsProps
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
       {cards.map((card, idx) => {
         const Icon = card.icon;
         return (
           <div
             key={idx}
-            className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 shadow-2xs flex flex-col justify-between transition-all hover:border-gray-200"
+            className="bg-white rounded-2xl p-3.5 sm:p-5 border border-gray-100 shadow-2xs flex flex-col justify-between transition-all hover:border-gray-200"
           >
             <div className="flex items-center justify-between mb-2.5">
               <span className="text-xs font-semibold text-gray-500">

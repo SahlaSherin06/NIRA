@@ -76,8 +76,9 @@ export const recordAction = asyncHandler(async (req: Request, res: Response, nex
 
     // Prepare update payload
     const updatePayload: any = { actorId, targetId, action };
-    if (action === "report" && reason) {
-      updatePayload.reason = reason;
+    if (action === "report") {
+      if (reason) updatePayload.reason = reason;
+      updatePayload.status = "pending";
     }
 
     // Upsert the interaction

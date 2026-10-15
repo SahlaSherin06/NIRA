@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { DashboardNavbar } from "@/components/layout/DashboardNavbar";
 import { DashboardFooter } from "@/components/layout/DashboardFooter";
+import { GlobalNotificationListener } from "@/components/notifications/GlobalNotificationListener";
 
 /**
  * Component: DashboardLayout
@@ -42,6 +43,7 @@ export default function DashboardLayout({
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#FDF8F9] via-white to-[#FDF8F9] flex flex-col font-sans selection:bg-brand-100 selection:text-brand-900 overflow-x-hidden">
       <DashboardNavbar />
+      <GlobalNotificationListener />
       
       {/* Main Page Content */}
       <main className="flex-1 flex flex-col pt-24 px-4 sm:px-6 lg:px-8 pb-28 md:pb-12 relative w-full max-w-7xl mx-auto">

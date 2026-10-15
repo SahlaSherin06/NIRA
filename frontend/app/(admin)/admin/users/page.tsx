@@ -83,8 +83,8 @@ export default function AdminUsersPage() {
 
       {/* 5. Pagination Controls */}
       {data && data.total > 0 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-gray-100 shadow-2xs text-xs">
-          <div className="text-gray-500 font-medium">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3.5 sm:p-4 rounded-2xl border border-gray-100 shadow-2xs text-xs">
+          <div className="text-gray-500 font-medium text-center sm:text-left">
             Showing{" "}
             <span className="font-bold text-gray-900">
               {(page - 1) * 12 + 1}
@@ -96,7 +96,7 @@ export default function AdminUsersPage() {
             of <span className="font-bold text-gray-900">{data.total}</span> members
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 w-full sm:w-auto justify-between sm:justify-end">
             <button
               onClick={() => setPage((p) => Math.max(p - 1, 1))}
               disabled={page <= 1}

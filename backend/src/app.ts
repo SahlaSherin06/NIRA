@@ -33,6 +33,48 @@ app.use(cookieParser());
 // Connect to MongoDB
 connectDB();
 
+const PORT = process.env.PORT || 5000;
+
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: [
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+      process.env.FRONTEND_URL as string
+    ].filter(Boolean),
+    credentials: true,
+    methods: ["GET", "POST"]
+  }
+});
+
+// Pass io to request object so all route controllers can emit events
+app.use((req: any, _res, next) => {
+  req.io = io;
+  next();
+});
+
+// Basic Socket.IO setup
+io.on("connection", (socket) => {
+  console.log("User connected to socket:", socket.id);
+
+  socket.on("join", (userId) => {
+    if (userId) {
+      socket.join(userId.toString());
+      console.log(`User ${userId} joined their personal room`);
+    }
+  });
+
+  socket.on("sendMessage", (data) => {
+    // data should have { receiverId, message }
+    io.to(data.receiverId).emit("newMessage", data.message);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected:", socket.id);
+  });
+});
+
 // Mount API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
@@ -52,41 +94,6 @@ app.get("/", (_req, res) => {
 
 // Global Error Handler (must be registered after all routes)
 app.use(errorHandler);
-
-const PORT = process.env.PORT || 5000;
-
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
-    methods: ["GET", "POST"]
-  }
-});
-
-// Basic Socket.IO setup
-io.on("connection", (socket) => {
-  console.log("User connected to socket:", socket.id);
-
-  socket.on("join", (userId) => {
-    socket.join(userId);
-    console.log(`User ${userId} joined their personal room`);
-  });
-
-  socket.on("sendMessage", (data) => {
-    // data should have { receiverId, message }
-    io.to(data.receiverId).emit("newMessage", data.message);
-  });
-
-  socket.on("disconnect", () => {
-    console.log("User disconnected:", socket.id);
-  });
-});
-
-// Pass io to request object so controllers can emit events if needed
-app.use((req: any, res, next) => {
-  req.io = io;
-  next();
-});
 
 server.listen(PORT, () => {
   console.log(`NIRA backend (with Socket.IO) running on port ${PORT}`);

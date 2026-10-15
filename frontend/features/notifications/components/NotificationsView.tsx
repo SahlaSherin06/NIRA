@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useEffect } from "react";
-import { Bell, Heart, Users, Sparkles, Check, MessageCircle, User as UserIcon } from "lucide-react";
+import { Bell, Heart, Users, Sparkles, Check, MessageCircle, User as UserIcon, AlertTriangle, ShieldAlert, Info } from "lucide-react";
 import { useNotifications, useMarkNotificationsRead } from "../notification.queries";
 import { formatDistanceToNow, isToday, isYesterday } from "date-fns";
 import Link from "next/link";
@@ -47,11 +47,113 @@ export function NotificationsView() {
   const hasUnread = groupedNotifications.new.length > 0;
 
   const renderNotification = (notification: NotificationData) => {
+    const isWarning = notification.type === 'warning';
     const isMatch = notification.type === 'match';
     const isLike = notification.type === 'interest_received' || notification.type === 'superlike_received';
     const isMessage = notification.type === 'new_message';
     const isSystem = notification.type === 'system';
     const user = notification.relatedUser;
+
+    // Dedicated Safety / Admin Warning Notification View
+    if (isWarning) {
+      return (
+        <div 
+          key={notification._id} 
+          className={`p-4 md:p-5 rounded-2xl transition-all duration-300 relative group border ${
+            !notification.isRead 
+              ? "bg-gradient-to-r from-amber-50 via-orange-50/70 to-white border-amber-400 shadow-md shadow-amber-500/10" 
+              : "bg-amber-50/30 border-amber-200/80 hover:bg-amber-50/60"
+          } flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4`}
+        >
+          {/* Unread Indicator */}
+          {!notification.isRead && (
+            <div className="absolute top-5 right-5 w-2.5 h-2.5 bg-amber-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.8)]"></div>
+          )}
+
+          {/* Warning Icon Area */}
+          <div className="relative flex-shrink-0">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center flex-shrink-0 border-2 border-white shadow-md shadow-amber-500/20">
+              <AlertTriangle className="w-7 h-7 text-white" />
+            </div>
+
+            {/* Badge Icon Overlay */}
+            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-white flex items-center justify-center bg-red-600 text-white shadow-sm">
+              <ShieldAlert className="w-3.5 h-3.5" />
+            </div>
+          </div>
+
+          {/* Content Area */}
+          <div className="flex-1 min-w-0 pr-4">
+            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+              <span className="px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider rounded-md bg-amber-500/20 text-amber-900 border border-amber-300/60 flex items-center gap-1">
+                <AlertTriangle className="w-3 h-3 text-amber-700 inline" /> Official Warning Notice
+              </span>
+              {!notification.isRead && (
+                <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-red-100 text-red-700 border border-red-200">
+                  New Alert
+                </span>
+              )}
+            </div>
+
+            <p className={`text-sm md:text-[15px] leading-snug ${!notification.isRead ? 'text-gray-950 font-bold' : 'text-gray-800 font-semibold'}`}>
+              {notification.message}
+            </p>
+
+            <div className="mt-2 text-xs text-amber-900 bg-amber-100/70 p-2.5 rounded-xl border border-amber-200 flex items-start gap-1.5 font-medium">
+              <ShieldAlert className="w-4 h-4 text-amber-700 flex-shrink-0 mt-0.5" />
+              <span>
+                <strong>Community Standard Notice:</strong> Repeated guideline violations or accumulated strikes will result in permanent account suspension. Please ensure all interactions remain respectful.
+              </span>
+            </div>
+
+            <span className="text-xs text-gray-400 font-medium mt-2 block">
+              {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    // System Notification View (for resolutions / review updates)
+    if (isSystem) {
+      return (
+        <div 
+          key={notification._id} 
+          className={`p-4 md:p-5 rounded-2xl transition-all duration-300 relative group border ${
+            !notification.isRead 
+              ? "bg-white shadow-md border-blue-200" 
+              : "bg-white/60 hover:bg-white border-gray-100 hover:shadow-sm"
+          } flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4`}
+        >
+          {!notification.isRead && (
+            <div className="absolute top-5 right-5 w-2.5 h-2.5 bg-blue-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.6)]"></div>
+          )}
+
+          <div className="relative flex-shrink-0">
+            <div className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 border-2 border-white shadow-sm bg-blue-50 text-blue-600">
+              <Info className="w-6 h-6" />
+            </div>
+            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-white flex items-center justify-center bg-blue-500 text-white">
+              <Bell className="w-3 h-3" />
+            </div>
+          </div>
+
+          <div className="flex-1 min-w-0 pr-6">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-2 py-0.5 text-[10px] font-bold uppercase rounded-md bg-blue-50 text-blue-700 border border-blue-200 inline-block">
+                Moderation Team
+              </span>
+            </div>
+            <p className={`text-sm md:text-[15px] leading-snug ${!notification.isRead ? 'text-gray-900 font-semibold' : 'text-gray-700 font-medium'}`}>
+              {notification.message}
+            </p>
+            <span className="text-xs text-gray-400 font-medium mt-1.5 block">
+              {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+            </span>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div 

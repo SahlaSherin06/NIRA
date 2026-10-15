@@ -7,13 +7,8 @@ import {
   Crown,
   Ban,
   CheckCircle2,
-  Calendar,
-  MapPin,
   Briefcase,
-  GraduationCap,
   Heart,
-  ShieldAlert,
-  Sparkles,
   User,
   Image as ImageIcon,
   Loader2,
@@ -64,7 +59,7 @@ export function AdminUserProfileModal({
   const age = calculateAge(prof?.dob);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div 
         className="fixed inset-0" 
         onClick={onClose}
@@ -72,19 +67,19 @@ export function AdminUserProfileModal({
       />
 
       {/* Modal Container */}
-      <div className="relative z-10 w-full max-w-3xl bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200">
+      <div className="relative z-10 w-full max-w-3xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-gray-100 overflow-hidden max-h-[92vh] sm:max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200">
         
         {/* Top Header Bar */}
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-20">
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-20">
           <div className="flex items-center space-x-2.5">
             <div className="w-8 h-8 rounded-xl bg-brand-50 border border-brand-100/70 flex items-center justify-center text-brand-900 font-serif font-bold text-sm">
               N
             </div>
             <div>
-              <h2 className="text-base font-bold font-sans text-gray-900 leading-tight">
+              <h2 className="text-sm sm:text-base font-bold font-sans text-gray-900 leading-tight">
                 Member Biodata & Verification
               </h2>
-              <span className="text-[11px] text-gray-400 font-medium">
+              <span className="text-[10px] sm:text-[11px] text-gray-400 font-medium truncate block max-w-[180px] sm:max-w-none">
                 ID: {user._id}
               </span>
             </div>
@@ -92,7 +87,7 @@ export function AdminUserProfileModal({
 
           <button
             onClick={onClose}
-            className="p-2 rounded-xl text-gray-400 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+            className="p-1.5 sm:p-2 rounded-xl text-gray-400 hover:text-gray-900 hover:bg-gray-100 transition-colors"
             aria-label="Close modal"
           >
             <X className="w-5 h-5" />
@@ -100,10 +95,10 @@ export function AdminUserProfileModal({
         </div>
 
         {/* Modal Scrollable Body */}
-        <div className="overflow-y-auto flex-1 p-6 space-y-6 custom-scrollbar">
+        <div className="overflow-y-auto flex-1 p-4 sm:p-6 space-y-4 sm:space-y-6 custom-scrollbar">
 
           {/* 1. Identity & Real Photos Section */}
-          <div className="bg-[#FCFAF8] p-5 sm:p-6 rounded-2xl border border-gray-100 flex flex-col md:flex-row gap-6 items-start">
+          <div className="bg-[#FCFAF8] p-4 sm:p-6 rounded-2xl border border-gray-100 flex flex-col md:flex-row gap-5 sm:gap-6 items-start">
             
             {/* Real Photo Viewer */}
             <div className="w-full md:w-56 shrink-0 flex flex-col items-center">
@@ -347,7 +342,7 @@ export function AdminUserProfileModal({
         </div>
 
         {/* Modal Bottom Moderation Action Bar */}
-        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 bg-gray-50 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="text-xs text-gray-500 font-medium">
             Administrative controls for <span className="font-bold text-gray-900">{user.name}</span>
           </div>

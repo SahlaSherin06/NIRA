@@ -5,7 +5,11 @@ export interface IInteraction extends Document {
   targetId: mongoose.Types.ObjectId;
   action: "like" | "superlike" | "pass" | "block" | "favorite" | "report";
   reason?: string;
+  status?: "pending" | "warned" | "resolved" | "dismissed";
+  adminNote?: string;
+  resolvedAt?: Date;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 const InteractionSchema = new Schema<IInteraction>(
@@ -19,6 +23,19 @@ const InteractionSchema = new Schema<IInteraction>(
     },
     reason: {
       type: String,
+      required: false,
+    },
+    status: {
+      type: String,
+      enum: ["pending", "warned", "resolved", "dismissed"],
+      default: "pending",
+    },
+    adminNote: {
+      type: String,
+      required: false,
+    },
+    resolvedAt: {
+      type: Date,
       required: false,
     },
   },
