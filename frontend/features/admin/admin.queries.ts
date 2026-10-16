@@ -13,6 +13,11 @@ import {
   grantVipAccessApi,
   extendVipSubscriptionApi,
   revokeVipSubscriptionApi,
+  getAdminNotificationsApi,
+  markAllAdminNotificationsReadApi,
+  markAdminNotificationReadApi,
+  deleteAdminNotificationApi,
+  clearAllAdminNotificationsApi,
 } from "./admin.api";
 
 export const adminKeys = {
@@ -22,6 +27,7 @@ export const adminKeys = {
   reports: (params?: any) => [...adminKeys.all, "reports", params] as const,
   subscriptions: (params?: any) => [...adminKeys.all, "subscriptions", params] as const,
   eligibleUsers: (search?: string) => [...adminKeys.all, "eligible-users", search] as const,
+  notifications: (params?: any) => [...adminKeys.all, "notifications", params] as const,
 };
 
 export const useAdminStats = () => {
@@ -141,6 +147,59 @@ export const useRevokeVipSubscription = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: { subscriberId: string; note?: string }) => revokeVipSubscriptionApi(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: adminKeys.all });
+    },
+  });
+};
+
+// --- Admin Notifications Hooks ---
+export const useAdminNotifications = (params?: {
+  page?: number;
+  limit?: number;
+  type?: string;
+  filter?: "all" | "unread" | "read";
+}) => {
+  return useQuery({
+    queryKey: adminKeys.notifications(params),
+    queryFn: () => getAdminNotificationsApi(params),
+  });
+};
+
+export const useMarkAllAdminNotificationsRead = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: markAllAdminNotificationsReadApi,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: adminKeys.all });
+    },
+  });
+};
+
+export const useMarkAdminNotificationRead = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => markAdminNotificationReadApi(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: adminKeys.all });
+    },
+  });
+};
+
+export const useDeleteAdminNotification = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteAdminNotificationApi(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: adminKeys.all });
+    },
+  });
+};
+
+export const useClearAllAdminNotifications = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: clearAllAdminNotificationsApi,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminKeys.all });
     },

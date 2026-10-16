@@ -75,6 +75,31 @@ export const googleLogin = asyncHandler(async (req: Request, res: Response, next
         provider: "google",
         providerAccountId: googleId,
       });
+
+      // Notify Admin of Google registration
+      try {
+        const { Notification } = require("../../notifications/models/Notification");
+        const adminNotif = await Notification.create({
+          isAdminNotification: true,
+          type: "admin_registration",
+          title: "New Member Registered (Google)",
+          message: `${user.name} (${user.email}) registered using Google Sign-In.`,
+          relatedUserId: user._id,
+          link: "/admin/users",
+          metadata: {
+            userName: user.name,
+            userEmail: user.email,
+            provider: "google",
+          },
+        });
+
+        const io = (req as any).io;
+        if (io) {
+          io.emit("adminNotification", adminNotif);
+        }
+      } catch (e) {
+        console.error("Failed to emit Google registration notification:", e);
+      }
     }
 
     // Check if admin email

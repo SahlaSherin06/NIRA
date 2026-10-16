@@ -8,13 +8,16 @@ export const api = axios.create({
 });
 
 let isRefreshing = false;
-let failedQueue: any[] = [];
+let failedQueue: Array<{
+  resolve: (token: string) => void;
+  reject: (err: any) => void;
+}> = [];
 
 const processQueue = (error: any, token: string | null = null) => {
-  failedQueue.forEach(prom => {
+  failedQueue.forEach((prom) => {
     if (error) {
       prom.reject(error);
-    } else {
+    } else if (token) {
       prom.resolve(token);
     }
   });
@@ -22,9 +25,11 @@ const processQueue = (error: any, token: string | null = null) => {
 };
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("nira_access_token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("nira_access_token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
   }
   return config;
 });
@@ -34,43 +39,65 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Check if error is 401 and request was not already retried, and is not the refresh request itself
+    if (
+      error.response?.status === 401 &&
+      originalRequest &&
+      !originalRequest._retry &&
+      !originalRequest.url?.includes("/auth/refresh")
+    ) {
       if (isRefreshing) {
-        // If already refreshing, put this request in the queue
-        return new Promise(function(resolve, reject) {
+        // If already refreshing, queue this request until the new token is available
+        return new Promise<string>((resolve, reject) => {
           failedQueue.push({ resolve, reject });
-        }).then(token => {
-          originalRequest.headers.Authorization = `Bearer ${token}`;
-          return api(originalRequest);
-        }).catch(err => {
-          return Promise.reject(err);
-        });
+        })
+          .then((token) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return api(originalRequest);
+          })
+          .catch((err) => {
+            return Promise.reject(err);
+          });
       }
 
       originalRequest._retry = true;
       isRefreshing = true;
 
       try {
-        const res = await api.post("/auth/refresh");
+        // Use clean base axios to avoid interceptor recursion
+        const res = await axios.post(
+          `${BASE_URL}/auth/refresh`,
+          {},
+          { withCredentials: true }
+        );
         const newAccessToken = res.data.accessToken;
-        
-        localStorage.setItem("nira_access_token", newAccessToken);
+
+        if (typeof window !== "undefined") {
+          localStorage.setItem("nira_access_token", newAccessToken);
+        }
         api.defaults.headers.common["Authorization"] = `Bearer ${newAccessToken}`;
-        
+
         processQueue(null, newAccessToken);
-        
+
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        localStorage.removeItem("nira_access_token");
-        window.location.href = "/login";
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("nira_access_token");
+          if (
+            window.location.pathname !== "/login" &&
+            window.location.pathname !== "/"
+          ) {
+            window.location.href = "/login";
+          }
+        }
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
       }
     }
-    
+
     return Promise.reject(error);
   }
 );

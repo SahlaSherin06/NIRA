@@ -22,6 +22,13 @@ import {
   extendVipSubscription,
   revokeVipSubscription,
 } from "../controllers/subscriptionsController";
+import {
+  getAdminNotifications,
+  markAllAdminNotificationsRead,
+  markAdminNotificationRead,
+  deleteAdminNotification,
+  clearAllAdminNotifications,
+} from "../controllers/adminNotificationController";
 
 const router = express.Router();
 
@@ -49,5 +56,12 @@ router.get("/subscriptions/eligible-users", getEligibleUsersForGrant);
 router.post("/subscriptions/grant", grantVipAccess);
 router.patch("/subscriptions/:id/extend", extendVipSubscription);
 router.patch("/subscriptions/:id/revoke", revokeVipSubscription);
+
+// 5. Admin Notifications & Live Alerts
+router.get("/notifications", getAdminNotifications);
+router.patch("/notifications/mark-all-read", markAllAdminNotificationsRead);
+router.patch("/notifications/:id/read", markAdminNotificationRead);
+router.delete("/notifications/clear-all", clearAllAdminNotifications);
+router.delete("/notifications/:id", deleteAdminNotification);
 
 export default router;

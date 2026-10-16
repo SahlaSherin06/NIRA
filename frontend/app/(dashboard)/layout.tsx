@@ -20,19 +20,28 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const { data: session, isPending } = useSession();
 
+  const isAdmin =
+    session?.user?.role === "admin" ||
+    session?.user?.email?.toLowerCase() === "sahlasherins86+admin@gmail.com";
+
   // Basic route protection
   useEffect(() => {
     if (isPending) return;
 
     if (!session) {
-      localStorage.removeItem("nira_access_token");
-      router.replace("/");
+      const token = typeof window !== "undefined" ? localStorage.getItem("nira_access_token") : null;
+      if (!token) {
+        router.replace("/");
+      }
+    } else if (isAdmin) {
+      // Admin should never access member dating pages (/home, /profile, etc.)
+      router.replace("/admin");
     } else if (session.user && !session.user.isOnboardingComplete && pathname !== "/onboarding") {
       router.replace("/onboarding");
     }
-  }, [isPending, session, router, pathname]);
+  }, [isPending, session, isAdmin, router, pathname]);
 
-  if (isPending || !session) {
+  if (isPending || !session || isAdmin) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#FDF8F9] via-white to-[#FDF8F9] flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-brand-900 border-t-transparent rounded-full animate-spin"></div>

@@ -48,7 +48,8 @@ export const getRecommendations = asyncHandler(async (req: Request, res: Respons
         $match: { 
           gender: { $regex: new RegExp(`^${targetGender}$`, 'i') }, 
           _id: { $nin: excludedIds }, 
-          isOnboardingComplete: true 
+          isOnboardingComplete: true,
+          role: { $ne: "admin" },
         } 
       },
       {

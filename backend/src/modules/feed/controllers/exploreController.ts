@@ -31,10 +31,11 @@ export const getExploreData = asyncHandler(async (req: Request, res: Response, n
     const excludedIds = pastInteractions.map(i => i.targetId);
     excludedIds.push(currentUser._id);
 
-        const baseMatch: any = {
+    const baseMatch: any = {
       gender: { $regex: new RegExp(`^${targetGender}$`, 'i') },
       isOnboardingComplete: true,
-      _id: { $nin: excludedIds }
+      _id: { $nin: excludedIds },
+      role: { $ne: "admin" },
     };
 
     const { q, minAge, maxAge, religion } = req.query;

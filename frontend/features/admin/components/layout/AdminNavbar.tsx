@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useSession } from "@/features/auth/auth.queries";
-import { useAdminStats } from "../../admin.queries";
+import { useAdminStats, useAdminNotifications } from "../../admin.queries";
 
 interface AdminNavbarProps {
   onToggleSidebar: () => void;
@@ -24,8 +24,11 @@ export function AdminNavbar({ onToggleSidebar }: AdminNavbarProps) {
   const pathname = usePathname();
   const { data: session, signOut } = useSession();
   const { data: stats } = useAdminStats();
+  const { data: notifData } = useAdminNotifications({ limit: 1 });
   const [profileOpen, setProfileOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const unreadNotifs = notifData?.counts?.unread || 0;
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -39,6 +42,7 @@ export function AdminNavbar({ onToggleSidebar }: AdminNavbarProps) {
   }, []);
 
   const getPageTitle = () => {
+    if (pathname.includes("/admin/notifications")) return "Notification Center";
     if (pathname.includes("/admin/users")) return "User Management";
     if (pathname.includes("/admin/reports")) return "Reports & Moderation";
     if (pathname.includes("/admin/subscriptions")) return "Subscriptions";
@@ -69,15 +73,17 @@ export function AdminNavbar({ onToggleSidebar }: AdminNavbarProps) {
 
       {/* Right: Notifications & Attractive Admin Profile */}
       <div className="flex items-center space-x-3">
-        {/* Moderation Alerts */}
+        {/* Admin Notifications Center */}
         <Link
-          href="/admin/reports"
+          href="/admin/notifications"
           className="relative p-2 rounded-xl text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
-          title="Moderation & Safety Alerts"
+          title="Admin Notification Center"
         >
           <Bell className="w-4 h-4" />
-          {stats?.reportsCount && stats.reportsCount > 0 ? (
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white"></span>
+          {unreadNotifs > 0 ? (
+            <span className="absolute -top-1 -right-1 px-1.5 py-0.2 rounded-full text-[10px] font-extrabold bg-brand-900 text-white ring-2 ring-white">
+              {unreadNotifs > 99 ? "99+" : unreadNotifs}
+            </span>
           ) : null}
         </Link>
 

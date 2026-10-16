@@ -60,7 +60,8 @@ export const refreshToken = asyncHandler(async (req: Request, res: Response, nex
     return;
   }
 
-  // Issue new tokens
+  // Clean up previous session and issue new tokens
+  await Session.deleteOne({ refreshToken: token });
   const accessToken = await generateTokens(decoded.userId, res);
   res.status(200).json({ accessToken });
 });
@@ -79,7 +80,8 @@ export const logout = asyncHandler(async (req: Request, res: Response, next: Nex
   res.clearCookie("refreshToken", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    sameSite: "lax",
+    path: "/",
   });
 
   res.status(200).json({ message: "Logged out successfully" });

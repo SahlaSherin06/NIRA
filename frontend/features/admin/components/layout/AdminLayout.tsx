@@ -2,11 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { useSession } from "@/features/auth/auth.queries";
 import { AdminSidebar } from "./AdminSidebar";
 import { AdminNavbar } from "./AdminNavbar";
 import { Loader2, ShieldAlert } from "lucide-react";
 import Link from "next/link";
+import { getSocket } from "@/lib/socket";
+import { adminKeys } from "../../admin.queries";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -16,14 +19,40 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { data: session, isPending } = useSession();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const isAdmin =
     session?.user?.role === "admin" ||
     session?.user?.email?.toLowerCase() === "sahlasherins86+admin@gmail.com";
 
+  // Real-time admin notifications listener via Socket.IO
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    try {
+      const socket = getSocket();
+
+      const handleAdminNotification = () => {
+        // Automatically refetch notifications and platform stats in real-time
+        queryClient.invalidateQueries({ queryKey: adminKeys.all });
+      };
+
+      socket.on("adminNotification", handleAdminNotification);
+
+      return () => {
+        socket.off("adminNotification", handleAdminNotification);
+      };
+    } catch (err) {
+      console.error("Failed to connect admin socket:", err);
+    }
+  }, [isAdmin, queryClient]);
+
   useEffect(() => {
     if (!isPending && !session) {
-      router.replace("/login");
+      const token = typeof window !== "undefined" ? localStorage.getItem("nira_access_token") : null;
+      if (!token) {
+        router.replace("/login");
+      }
     }
   }, [isPending, session, router]);
 

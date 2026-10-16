@@ -303,3 +303,83 @@ export const revokeVipSubscriptionApi = async (data: {
   return res.data;
 };
 
+// --- Admin Notifications Types & API ---
+export interface AdminNotification {
+  _id: string;
+  type: "admin_report" | "admin_registration" | "admin_subscription" | string;
+  title?: string;
+  message: string;
+  isRead: boolean;
+  link?: string;
+  metadata?: Record<string, any>;
+  createdAt: string;
+  relatedUser?: {
+    _id: string;
+    name: string;
+    email: string;
+    photo?: string | null;
+    gender?: string;
+    profile?: {
+      mainPhoto?: string;
+      city?: string;
+      state?: string;
+    };
+  } | null;
+  targetUser?: {
+    _id: string;
+    name: string;
+    email: string;
+    photo?: string | null;
+    gender?: string;
+    profile?: {
+      mainPhoto?: string;
+    };
+  } | null;
+}
+
+export interface AdminNotificationsResponse {
+  notifications: AdminNotification[];
+  total: number;
+  page: number;
+  pages: number;
+  counts: {
+    all: number;
+    unread: number;
+    reports: number;
+    registrations: number;
+    subscriptions: number;
+  };
+}
+
+export const getAdminNotificationsApi = async (params?: {
+  page?: number;
+  limit?: number;
+  type?: string;
+  filter?: "all" | "unread" | "read";
+}): Promise<AdminNotificationsResponse> => {
+  const res = await api.get("/admin/notifications", { params });
+  return res.data;
+};
+
+export const markAllAdminNotificationsReadApi = async (): Promise<{ message: string }> => {
+  const res = await api.patch("/admin/notifications/mark-all-read");
+  return res.data;
+};
+
+export const markAdminNotificationReadApi = async (
+  id: string
+): Promise<{ message: string; notification: AdminNotification }> => {
+  const res = await api.patch(`/admin/notifications/${id}/read`);
+  return res.data;
+};
+
+export const deleteAdminNotificationApi = async (id: string): Promise<{ message: string }> => {
+  const res = await api.delete(`/admin/notifications/${id}`);
+  return res.data;
+};
+
+export const clearAllAdminNotificationsApi = async (): Promise<{ message: string }> => {
+  const res = await api.delete("/admin/notifications/clear-all");
+  return res.data;
+};
+

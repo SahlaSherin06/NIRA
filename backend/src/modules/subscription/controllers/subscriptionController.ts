@@ -45,16 +45,34 @@ export const devUpgrade = asyncHandler(async (req: Request, res: Response, next:
     { new: true }
   );
 
-  // Send real-time notification
+  // Send real-time notification to user & admin
   try {
     const notif = await Notification.create({
       userId,
       type: "system",
       message: `🎉 Congratulations! Your NIRA ${selectedPlan.label} membership is active. Enjoy unlimited likes, priority visibility, and premium perks!`,
     });
+
+    const adminNotif = await Notification.create({
+      isAdminNotification: true,
+      type: "admin_subscription",
+      title: "New VIP Subscription",
+      message: `${updatedUser?.name || "A member"} (${updatedUser?.email || ""}) upgraded to ${selectedPlan.label} (₹${selectedPlan.price.toLocaleString()}).`,
+      relatedUserId: userId,
+      link: "/admin/subscriptions",
+      metadata: {
+        userName: updatedUser?.name,
+        userEmail: updatedUser?.email,
+        plan: selectedPlan.label,
+        duration: selectedPlan.durationKey,
+        amount: selectedPlan.price,
+      },
+    });
+
     const io = (req as any).io;
     if (io) {
       io.to(userId.toString()).emit("newNotification", notif);
+      io.emit("adminNotification", adminNotif);
     }
   } catch (e) {
     // notification failure should not block upgrade

@@ -7,10 +7,11 @@ import {
   Users,
   ShieldAlert,
   Crown,
+  Bell,
   LogOut,
 } from "lucide-react";
 import { useSession } from "@/features/auth/auth.queries";
-import { useAdminStats } from "../../admin.queries";
+import { useAdminStats, useAdminNotifications } from "../../admin.queries";
 
 interface AdminSidebarProps {
   isOpen: boolean;
@@ -21,12 +22,22 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
   const pathname = usePathname();
   const { signOut } = useSession();
   const { data: stats } = useAdminStats();
+  const { data: notifData } = useAdminNotifications({ limit: 1 });
+
+  const unreadNotifs = notifData?.counts?.unread || 0;
 
   const navItems = [
     {
       name: "Dashboard",
       href: "/admin/dashboard",
       icon: LayoutDashboard,
+    },
+    {
+      name: "Notifications",
+      href: "/admin/notifications",
+      icon: Bell,
+      badge: unreadNotifs > 0 ? unreadNotifs : undefined,
+      badgeColor: "bg-brand-900 text-white",
     },
     {
       name: "Users",
@@ -46,7 +57,7 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
       href: "/admin/subscriptions",
       icon: Crown,
       badge: stats?.premiumUsers,
-      badgeColor: "bg-amber-100 text-amber-800",
+      badgeColor: "bg-brand-50 text-brand-900 border border-brand-200/80",
     },
   ];
 

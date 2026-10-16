@@ -15,14 +15,24 @@ export default function OnboardingPage() {
   useEffect(() => {
     if (isPending) return;
 
+    const isAdmin =
+      session?.user?.role === "admin" ||
+      session?.user?.email?.toLowerCase() === "sahlasherins86+admin@gmail.com";
+
     if (!session) {
       router.replace("/");
+    } else if (isAdmin) {
+      router.replace("/admin");
     } else if (session.user?.isOnboardingComplete) {
       router.replace("/home");
     }
   }, [isPending, session, router]);
 
-  if (isPending || !session || session.user?.isOnboardingComplete) {
+  const isAdmin =
+    session?.user?.role === "admin" ||
+    session?.user?.email?.toLowerCase() === "sahlasherins86+admin@gmail.com";
+
+  if (isPending || !session || isAdmin || session.user?.isOnboardingComplete) {
     return (
       <div className="min-h-screen bg-[#F9F7F6] flex items-center justify-center">
         <div className="animate-pulse flex flex-col items-center">

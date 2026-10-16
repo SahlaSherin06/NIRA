@@ -82,16 +82,49 @@ export const recordAction = asyncHandler(async (req: Request, res: Response, nex
     }
 
     // Upsert the interaction
-      await Interaction.findOneAndUpdate(
-        { actorId, targetId },
-        updatePayload,
-        { upsert: true, returnDocument: 'after' }
-      );
+    await Interaction.findOneAndUpdate(
+      { actorId, targetId },
+      updatePayload,
+      { upsert: true, returnDocument: 'after' }
+    );
 
-      // CRITICAL FIX: If blocking, delete the reciprocal like so they don't auto-match if unblocked
-      if (action === "block") {
-        await Interaction.findOneAndDelete({ actorId: targetId, targetId: actorId });
+    // Notify Admin of new report submission
+    if (action === "report") {
+      try {
+        const { Notification } = require("../../notifications/models/Notification");
+        const actorUser = await User.findById(actorId).select("name email gender");
+        const targetUser = await User.findById(targetId).select("name email gender");
+
+        const adminNotif = await Notification.create({
+          isAdminNotification: true,
+          type: "admin_report",
+          title: "New Safety Report Submitted",
+          message: `${actorUser?.name || "A member"} reported ${targetUser?.name || "a profile"}: "${reason || "No reason specified"}"`,
+          relatedUserId: actorId,
+          targetUserId: targetId,
+          link: "/admin/reports",
+          metadata: {
+            actorName: actorUser?.name,
+            actorEmail: actorUser?.email,
+            targetName: targetUser?.name,
+            targetEmail: targetUser?.email,
+            reason: reason || "No reason specified",
+          },
+        });
+
+        const io = (req as any).io;
+        if (io) {
+          io.emit("adminNotification", adminNotif);
+        }
+      } catch (err) {
+        console.error("Failed to emit admin report notification:", err);
       }
+    }
+
+    // CRITICAL FIX: If blocking, delete the reciprocal like so they don't auto-match if unblocked
+    if (action === "block") {
+      await Interaction.findOneAndDelete({ actorId: targetId, targetId: actorId });
+    }
 
     if (action === "like") {
       const { Notification } = require("../../notifications/models/Notification");

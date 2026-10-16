@@ -133,6 +133,32 @@ export const registerStep3 = asyncHandler(async (req: Request, res: Response, ne
       providerAccountId: newUser.email,
     });
 
+    // Notify Admin of new registration
+    try {
+      const { Notification } = require("../../notifications/models/Notification");
+      const adminNotif = await Notification.create({
+        isAdminNotification: true,
+        type: "admin_registration",
+        title: "New Member Registered",
+        message: `${newUser.name} (${newUser.email}) just created a new NIRA account.`,
+        relatedUserId: newUser._id,
+        link: "/admin/users",
+        metadata: {
+          userName: newUser.name,
+          userEmail: newUser.email,
+          gender: newUser.gender,
+          createdFor: newUser.createdFor,
+        },
+      });
+
+      const io = (req as any).io;
+      if (io) {
+        io.emit("adminNotification", adminNotif);
+      }
+    } catch (e) {
+      console.error("Failed to emit admin registration notification:", e);
+    }
+
     // Clear passed flag
     await redis.del(passedKey);
     

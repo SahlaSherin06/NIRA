@@ -1,36 +1,6 @@
 import { api } from "../../lib/axios";
 
-// Interceptor to automatically add the Access Token to headers
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("nira_access_token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
 
-// Interceptor to handle 401 errors and refresh the token automatically
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      try {
-        const res = await api.post("/auth/refresh");
-        const newAccessToken = res.data.accessToken;
-        localStorage.setItem("nira_access_token", newAccessToken);
-        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-        return api(originalRequest);
-      } catch (refreshError) {
-        localStorage.removeItem("nira_access_token");
-        window.location.href = "/login";
-        return Promise.reject(refreshError);
-      }
-    }
-    return Promise.reject(error);
-  }
-);
 
 // API Functions
 /**

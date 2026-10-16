@@ -152,6 +152,15 @@ export function LoginForm() {
       sessionStorage.removeItem("nira_login_step");
       sessionStorage.removeItem("nira_login_email");
       
+      const isAdmin =
+        response.user?.role === "admin" ||
+        response.user?.email?.toLowerCase() === "sahlasherins86+admin@gmail.com";
+
+      if (isAdmin) {
+        router.replace("/admin");
+        return;
+      }
+
       if (response.user?.isOnboardingComplete) {
         router.replace("/home");
       } else {
@@ -168,6 +177,15 @@ export function LoginForm() {
         setError(null);
         const response = await signInWithGoogle.mutateAsync(tokenResponse.access_token);
         
+        const isAdmin =
+          response.user?.role === "admin" ||
+          response.user?.email?.toLowerCase() === "sahlasherins86+admin@gmail.com";
+
+        if (isAdmin) {
+          router.replace("/admin");
+          return;
+        }
+
         if (response.user?.isOnboardingComplete) {
           router.replace("/home");
         } else {
