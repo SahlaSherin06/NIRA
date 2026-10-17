@@ -240,7 +240,7 @@ export function NotificationsView() {
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-8 space-y-4 sm:space-y-0">
         <div>
-          <h1 className="text-3xl md:text-4xl font-extrabold font-serif text-gray-900 tracking-tight">Notifications</h1>
+          <h1 className="text-3xl md:text-4xl font-extrabold font-serif text-brand-900 tracking-tight">Notifications</h1>
           <p className="text-gray-500 mt-2 font-medium">Keep track of your latest matches and profile activity.</p>
         </div>
         

@@ -50,6 +50,7 @@ export const getRecommendations = asyncHandler(async (req: Request, res: Respons
           _id: { $nin: excludedIds }, 
           isOnboardingComplete: true,
           role: { $ne: "admin" },
+          isBanned: { $ne: true },
         } 
       },
       {
@@ -68,26 +69,84 @@ export const getRecommendations = asyncHandler(async (req: Request, res: Respons
 
     const scoreConditions: any[] = [];
     if (prefs?.prefReligion && prefs.prefReligion !== "Doesn't matter") {
-      scoreConditions.push({ $cond: [{ $eq: ["$profile.religion", prefs.prefReligion] }, 1, 0] });
+      scoreConditions.push({
+        $cond: [{ $regexMatch: { input: "$profile.religion", regex: new RegExp(`^${prefs.prefReligion.trim()}$`, "i") } }, 1, 0]
+      });
     }
     if (prefs?.prefEducation && prefs.prefEducation !== "Doesn't matter") {
-      scoreConditions.push({ $cond: [{ $eq: ["$profile.educationLevel", prefs.prefEducation] }, 1, 0] });
+      const cleanEdu = prefs.prefEducation.replace(/['’]s?/gi, "s?").trim();
+      scoreConditions.push({
+        $cond: [{ $regexMatch: { input: "$profile.educationLevel", regex: new RegExp(`^${cleanEdu}$`, "i") } }, 1, 0]
+      });
     }
     if (prefs?.prefMaritalStatus && prefs.prefMaritalStatus.length > 0 && !prefs.prefMaritalStatus.includes("Doesn't matter")) {
-      scoreConditions.push({ $cond: [{ $in: ["$profile.maritalStatus", prefs.prefMaritalStatus] }, 1, 0] });
+      const statusPatterns = prefs.prefMaritalStatus.map(s => `^${s.trim()}$`).join("|");
+      scoreConditions.push({
+        $cond: [{ $regexMatch: { input: "$profile.maritalStatus", regex: new RegExp(statusPatterns, "i") } }, 1, 0]
+      });
     }
     if (prefs?.prefSmoking && prefs.prefSmoking !== "Doesn't matter") {
-      scoreConditions.push({ $cond: [{ $eq: ["$profile.smoke", prefs.prefSmoking] }, 1, 0] });
+      if (prefs.prefSmoking.toLowerCase().includes("non")) {
+        scoreConditions.push({
+          $cond: [{ $regexMatch: { input: "$profile.smoke", regex: /^no$/i } }, 1, 0]
+        });
+      } else {
+        scoreConditions.push({
+          $cond: [{ $regexMatch: { input: "$profile.smoke", regex: /^(yes|occasionally)$/i } }, 1, 0]
+        });
+      }
     }
     if (prefs?.prefDrinking && prefs.prefDrinking !== "Doesn't matter") {
-      scoreConditions.push({ $cond: [{ $eq: ["$profile.drink", prefs.prefDrinking] }, 1, 0] });
+      if (prefs.prefDrinking.toLowerCase().includes("non")) {
+        scoreConditions.push({
+          $cond: [{ $regexMatch: { input: "$profile.drink", regex: /^no$/i } }, 1, 0]
+        });
+      } else {
+        scoreConditions.push({
+          $cond: [{ $regexMatch: { input: "$profile.drink", regex: /^(occasionally|yes)$/i } }, 1, 0]
+        });
+      }
+    }
+    if (prefs?.prefDiet && prefs.prefDiet !== "Doesn't matter") {
+      const diet = prefs.prefDiet.toLowerCase();
+      if (diet.includes("vegetarian") && !diet.includes("non")) {
+        scoreConditions.push({
+          $switch: {
+            branches: [
+              { case: { $regexMatch: { input: "$profile.diet", regex: /^(vegetarian|vegan)$/i } }, then: 5 },
+              { case: { $regexMatch: { input: "$profile.diet", regex: /^eggetarian$/i } }, then: 1 }
+            ],
+            default: 0
+          }
+        });
+      } else if (diet.includes("vegan")) {
+        scoreConditions.push({
+          $switch: {
+            branches: [
+              { case: { $regexMatch: { input: "$profile.diet", regex: /^vegan$/i } }, then: 5 },
+              { case: { $regexMatch: { input: "$profile.diet", regex: /^vegetarian$/i } }, then: 1 }
+            ],
+            default: 0
+          }
+        });
+      } else if (diet.includes("non")) {
+        scoreConditions.push({
+          $switch: {
+            branches: [
+              { case: { $regexMatch: { input: "$profile.diet", regex: /^(non-vegetarian|halal only)$/i } }, then: 5 },
+              { case: { $regexMatch: { input: "$profile.diet", regex: /^eggetarian$/i } }, then: 1 }
+            ],
+            default: 0
+          }
+        });
+      }
     }
 
     if (scoreConditions.length > 0) {
       pipeline.push({
         $addFields: { matchScore: { $add: scoreConditions } }
       });
-      pipeline.push({ $sort: { matchScore: -1, _id: 1 } });
+      pipeline.push({ $sort: { matchScore: -1, createdAt: -1, _id: 1 } });
     } else {
       // Sort by creation date if no scoring to keep pagination stable
       pipeline.push({ $sort: { createdAt: -1, _id: 1 } });

@@ -24,6 +24,14 @@ export const loginStep1Email = asyncHandler(async (req: Request, res: Response, 
       return;
     }
 
+    if (user.isBanned) {
+      res.status(403).json({
+        message: "Your account has been suspended by the administrator due to safety or community guidelines violations. Please contact support.",
+        isBanned: true,
+      });
+      return;
+    }
+
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const hashedOtp = await bcrypt.hash(otp, 10);
@@ -96,6 +104,14 @@ export const loginStep3Password = asyncHandler(async (req: Request, res: Respons
     const user = await User.findOne({ email: email.toLowerCase() });
     if (!user || !user.password) {
       res.status(401).json({ message: "Invalid email or password" });
+      return;
+    }
+
+    if (user.isBanned) {
+      res.status(403).json({
+        message: "Your account has been suspended by the administrator due to safety or community guidelines violations. Please contact support.",
+        isBanned: true,
+      });
       return;
     }
 

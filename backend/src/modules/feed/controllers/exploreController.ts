@@ -36,6 +36,7 @@ export const getExploreData = asyncHandler(async (req: Request, res: Response, n
       isOnboardingComplete: true,
       _id: { $nin: excludedIds },
       role: { $ne: "admin" },
+      isBanned: { $ne: true },
     };
 
     const { q, minAge, maxAge, religion } = req.query;
@@ -72,11 +73,79 @@ export const getExploreData = asyncHandler(async (req: Request, res: Response, n
     }
 
     const scoreConditions: any[] = [];
-    if (prefs?.prefReligion && prefs.prefReligion !== "Doesn't matter") scoreConditions.push({ $cond: [{ $eq: ["$profile.religion", prefs.prefReligion] }, 1, 0] });
-    if (prefs?.prefEducation && prefs.prefEducation !== "Doesn't matter") scoreConditions.push({ $cond: [{ $eq: ["$profile.educationLevel", prefs.prefEducation] }, 1, 0] });
-    if (prefs?.prefMaritalStatus && prefs.prefMaritalStatus.length > 0 && !prefs.prefMaritalStatus.includes("Doesn't matter")) scoreConditions.push({ $cond: [{ $in: ["$profile.maritalStatus", prefs.prefMaritalStatus] }, 1, 0] });
-    if (prefs?.prefSmoking && prefs.prefSmoking !== "Doesn't matter") scoreConditions.push({ $cond: [{ $eq: ["$profile.smoke", prefs.prefSmoking] }, 1, 0] });
-    if (prefs?.prefDrinking && prefs.prefDrinking !== "Doesn't matter") scoreConditions.push({ $cond: [{ $eq: ["$profile.drink", prefs.prefDrinking] }, 1, 0] });
+    if (prefs?.prefReligion && prefs.prefReligion !== "Doesn't matter") {
+      scoreConditions.push({
+        $cond: [{ $regexMatch: { input: "$profile.religion", regex: new RegExp(`^${prefs.prefReligion.trim()}$`, "i") } }, 1, 0]
+      });
+    }
+    if (prefs?.prefEducation && prefs.prefEducation !== "Doesn't matter") {
+      const cleanEdu = prefs.prefEducation.replace(/['’]s?/gi, "s?").trim();
+      scoreConditions.push({
+        $cond: [{ $regexMatch: { input: "$profile.educationLevel", regex: new RegExp(`^${cleanEdu}$`, "i") } }, 1, 0]
+      });
+    }
+    if (prefs?.prefMaritalStatus && prefs.prefMaritalStatus.length > 0 && !prefs.prefMaritalStatus.includes("Doesn't matter")) {
+      const statusPatterns = prefs.prefMaritalStatus.map(s => `^${s.trim()}$`).join("|");
+      scoreConditions.push({
+        $cond: [{ $regexMatch: { input: "$profile.maritalStatus", regex: new RegExp(statusPatterns, "i") } }, 1, 0]
+      });
+    }
+    if (prefs?.prefSmoking && prefs.prefSmoking !== "Doesn't matter") {
+      if (prefs.prefSmoking.toLowerCase().includes("non")) {
+        scoreConditions.push({
+          $cond: [{ $regexMatch: { input: "$profile.smoke", regex: /^no$/i } }, 1, 0]
+        });
+      } else {
+        scoreConditions.push({
+          $cond: [{ $regexMatch: { input: "$profile.smoke", regex: /^(yes|occasionally)$/i } }, 1, 0]
+        });
+      }
+    }
+    if (prefs?.prefDrinking && prefs.prefDrinking !== "Doesn't matter") {
+      if (prefs.prefDrinking.toLowerCase().includes("non")) {
+        scoreConditions.push({
+          $cond: [{ $regexMatch: { input: "$profile.drink", regex: /^no$/i } }, 1, 0]
+        });
+      } else {
+        scoreConditions.push({
+          $cond: [{ $regexMatch: { input: "$profile.drink", regex: /^(occasionally|yes)$/i } }, 1, 0]
+        });
+      }
+    }
+    if (prefs?.prefDiet && prefs.prefDiet !== "Doesn't matter") {
+      const diet = prefs.prefDiet.toLowerCase();
+      if (diet.includes("vegetarian") && !diet.includes("non")) {
+        scoreConditions.push({
+          $switch: {
+            branches: [
+              { case: { $regexMatch: { input: "$profile.diet", regex: /^(vegetarian|vegan)$/i } }, then: 5 },
+              { case: { $regexMatch: { input: "$profile.diet", regex: /^eggetarian$/i } }, then: 1 }
+            ],
+            default: 0
+          }
+        });
+      } else if (diet.includes("vegan")) {
+        scoreConditions.push({
+          $switch: {
+            branches: [
+              { case: { $regexMatch: { input: "$profile.diet", regex: /^vegan$/i } }, then: 5 },
+              { case: { $regexMatch: { input: "$profile.diet", regex: /^vegetarian$/i } }, then: 1 }
+            ],
+            default: 0
+          }
+        });
+      } else if (diet.includes("non")) {
+        scoreConditions.push({
+          $switch: {
+            branches: [
+              { case: { $regexMatch: { input: "$profile.diet", regex: /^(non-vegetarian|halal only)$/i } }, then: 5 },
+              { case: { $regexMatch: { input: "$profile.diet", regex: /^eggetarian$/i } }, then: 1 }
+            ],
+            default: 0
+          }
+        });
+      }
+    }
 
             // Pagination parameters
     const page = parseInt(req.query.page as string) || 1;
@@ -119,8 +188,8 @@ export const getExploreData = asyncHandler(async (req: Request, res: Response, n
       return User.aggregate(pipeline);
     };
 
-    // Complete Bios uses preferences
-    const completeBiosRaw = await fetchProfiles(limit, { _id: 1 }, true);
+    // Recommended (Curated matching preferences)
+    const completeBiosRaw = await fetchProfiles(limit, { createdAt: -1, _id: 1 }, true);
     const hasNextComplete = completeBiosRaw.length > limit;
     if (hasNextComplete) completeBiosRaw.pop();
 

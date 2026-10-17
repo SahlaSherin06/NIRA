@@ -29,7 +29,7 @@ export function AdminDashboardView() {
       {/* Top Welcome & Control Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
         <div>
-          <h1 className={`${headingFont.className} text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900`}>
+          <h1 className="text-2xl sm:text-3xl font-extrabold font-serif tracking-tight text-brand-900">
             Operations & Analytics
           </h1>
           <p className="text-xs sm:text-sm text-gray-500 mt-0.5">

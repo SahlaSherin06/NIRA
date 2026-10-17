@@ -171,8 +171,8 @@ export function ExploreFeed({ onProfileClick }: ExploreFeedProps) {
           <div className="mb-12">
             <div className="flex justify-between items-end mb-6">
               <div>
-                <h2 className="text-2xl font-bold font-serif text-gray-900">Profiles with Complete Bios</h2>
-                <p className="text-sm text-gray-500 mt-1">Detailed insights into lifestyle, values, and family background.</p>
+                <h2 className="text-2xl font-bold font-serif text-gray-900">Recommended For You</h2>
+                <p className="text-sm text-gray-500 mt-1">Curated profiles matching your preferences and lifestyle.</p>
               </div>
               <div className="hidden md:flex space-x-2">
                 <button className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-brand-50 hover:text-brand-900 transition-colors">

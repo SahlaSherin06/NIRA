@@ -56,6 +56,13 @@ export const googleLogin = asyncHandler(async (req: Request, res: Response, next
     let user = await User.findOne({ email: email.toLowerCase() });
 
     if (user) {
+      if (user.isBanned) {
+        res.status(403).json({
+          message: "Your account has been suspended by the administrator due to safety or community guidelines violations. Please contact support.",
+          isBanned: true,
+        });
+        return;
+      }
       const existingAccount = await Account.findOne({ userId: user._id, provider: "google" });
       if (!existingAccount) {
         await Account.create({

@@ -78,7 +78,7 @@ export function PremiumView() {
           <Sparkles className="w-3.5 h-3.5 text-brand-900" />
           <span>Active VIP Subscriber</span>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-bold font-serif text-gray-900 mb-2">
+        <h1 className="text-2xl sm:text-3xl font-bold font-serif text-brand-900 mb-2">
           You are a NIRA VIP Member!
         </h1>
         <p className="text-xs sm:text-sm text-gray-600 mb-6 max-w-md">
@@ -103,8 +103,8 @@ export function PremiumView() {
             <Crown className="w-3.5 h-3.5 text-brand-900" />
             <span>NIRA Matrimony Premium</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold font-serif text-gray-900 tracking-tight">
-            Select Your <span className="text-brand-900">VIP Membership</span> Plan
+          <h1 className="text-3xl sm:text-4xl font-extrabold font-serif text-brand-900 tracking-tight">
+            Select Your VIP Membership Plan
           </h1>
           <p className="text-xs sm:text-sm text-gray-600 max-w-xl mx-auto">
             Choose the package that suits you best. Get unlimited likes, unlock blurred photos, and boost your matchmaking success.

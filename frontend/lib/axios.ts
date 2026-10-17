@@ -37,6 +37,17 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
+    // If account is suspended (403 with isBanned), clear token and redirect
+    if (error.response?.status === 403 && error.response?.data?.isBanned) {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("nira_access_token");
+        if (window.location.pathname !== "/login") {
+          window.location.href = "/login?suspended=true";
+        }
+      }
+      return Promise.reject(error);
+    }
+
     const originalRequest = error.config;
 
     // Check if error is 401 and request was not already retried, and is not the refresh request itself

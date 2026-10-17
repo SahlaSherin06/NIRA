@@ -57,6 +57,18 @@ export function LoginForm() {
 
   // Restore state from sessionStorage on mount
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("suspended") === "true") {
+        setError(
+          "Your account has been suspended by the administrator due to safety or community guidelines violations. Please contact support."
+        );
+        sessionStorage.removeItem("nira_login_step");
+        sessionStorage.removeItem("nira_login_email");
+        return;
+      }
+    }
+
     const savedStep = sessionStorage.getItem("nira_login_step");
     const savedEmail = sessionStorage.getItem("nira_login_email");
     if (savedStep && savedEmail) {

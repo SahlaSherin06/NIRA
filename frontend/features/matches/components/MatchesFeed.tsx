@@ -272,7 +272,7 @@ export function MatchesFeed() {
       
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-serif font-bold text-gray-900 mb-2">Your Matches & Connections</h1>
+        <h1 className="text-3xl font-serif font-bold text-brand-900 mb-2">Your Matches & Connections</h1>
         <p className="text-gray-500 text-sm font-medium">People with mutual interest who are ready to connect and converse.</p>
       </div>
 
