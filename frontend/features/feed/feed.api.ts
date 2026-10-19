@@ -44,6 +44,29 @@ export interface Recommendation {
     galleryPhotos: string[];
     photoPrivacy: string;
   };
+  matchScore?: number;
+  matchedCount?: number;
+  totalCriteria?: number;
+}
+
+export interface FeedFilterParams {
+  minAge?: number;
+  maxAge?: number;
+  religion?: string;
+  caste?: string;
+  sect?: string;
+  diet?: string;
+  smoking?: string;
+  drinking?: string;
+  alcohol?: string;
+  education?: string;
+  profession?: string;
+  maritalStatus?: string[];
+  location?: string;
+  nationality?: string;
+  children?: string;
+  language?: string;
+  height?: string;
 }
 
 /**
@@ -52,15 +75,16 @@ export interface Recommendation {
  */
 export const feedKeys = {
   all: ["feed"] as const,
-  recommendations: () => [...feedKeys.all, "recommendations"] as const,
+  recommendations: (filters?: FeedFilterParams) => [...feedKeys.all, "recommendations", filters || {}] as const,
 };
 
 /**
  * Function: getRecommendationsApi
  * Executes the core operations and logic for get recommendations api.
  */
-export const getRecommendationsApi = async (page = 1): Promise<{ recommendations: Recommendation[], nextPage: number | null }> => {
-  const response = await api.get(`/feed/recommendations?page=${page}&limit=10`);
+export const getRecommendationsApi = async (page = 1, filters?: FeedFilterParams): Promise<{ recommendations: Recommendation[], nextPage: number | null }> => {
+  const params: any = { page, limit: 10, ...filters };
+  const response = await api.get(`/feed/recommendations`, { params });
   return response.data;
 };
 
@@ -84,10 +108,10 @@ export const undoPassApi = async () => {
  * Function: useRecommendations
  * Executes the core operations and logic for use recommendations.
  */
-export function useRecommendations() {
+export function useRecommendations(filters?: FeedFilterParams) {
   return useInfiniteQuery({
-    queryKey: feedKeys.recommendations(),
-    queryFn: ({ pageParam = 1 }) => getRecommendationsApi(pageParam),
+    queryKey: feedKeys.recommendations(filters),
+    queryFn: ({ pageParam = 1 }) => getRecommendationsApi(pageParam, filters),
     initialPageParam: 1,
     getNextPageParam: (lastPage) => lastPage.nextPage,
     staleTime: 5 * 60 * 1000,

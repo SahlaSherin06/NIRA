@@ -14,7 +14,8 @@ import {
   Utensils, 
   Languages, 
   Ban,
-  AlertTriangle
+  AlertTriangle,
+  Sparkles
 } from "lucide-react";
 
 interface ProfileCardProps {

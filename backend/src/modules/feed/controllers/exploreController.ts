@@ -39,120 +39,265 @@ export const getExploreData = asyncHandler(async (req: Request, res: Response, n
       isBanned: { $ne: true },
     };
 
-    const { q, minAge, maxAge, religion } = req.query;
+    const { q, minAge, maxAge, religion, caste, sect, diet, smoking, drinking, alcohol, education, profession, maritalStatus, location, nationality, children, language, height } = req.query;
 
-    // --- CALCULATE MATCH SCORE (Partial Matching / Korachokke Match) ---
+    const qMinAge = minAge ? Number(minAge) : undefined;
+    const qMaxAge = maxAge ? Number(maxAge) : undefined;
+    const qReligion = (religion as string) || undefined;
+    const qCaste = (caste as string) || (sect as string) || undefined;
+    const qDiet = (diet as string) || undefined;
+    const qSmoking = (smoking as string) || undefined;
+    const qDrinking = (drinking as string) || (alcohol as string) || undefined;
+    const qEducation = (education as string) || undefined;
+    const qProfession = (profession as string) || undefined;
+    const qLocation = (location as string) || undefined;
+    const qNationality = (nationality as string) || undefined;
+    const qChildren = (children as string) || undefined;
+    const qLanguage = (language as string) || undefined;
+    const qHeight = (height as string) || undefined;
+    const qMaritalStatus = maritalStatus 
+      ? (Array.isArray(maritalStatus) ? (maritalStatus as string[]) : [maritalStatus as string])
+      : undefined;
+
+    const filter = {
+      religion: qReligion ?? prefs?.prefReligion ?? "Doesn't matter",
+      caste: qCaste ?? "Doesn't matter",
+      diet: qDiet ?? prefs?.prefDiet ?? "Doesn't matter",
+      minAge: qMinAge ?? prefs?.prefAgeMin ?? 18,
+      maxAge: qMaxAge ?? prefs?.prefAgeMax ?? 60,
+      maritalStatus: qMaritalStatus ?? prefs?.prefMaritalStatus ?? [],
+      smoking: qSmoking ?? prefs?.prefSmoking ?? "Doesn't matter",
+      drinking: qDrinking ?? prefs?.prefDrinking ?? "Doesn't matter",
+      education: qEducation ?? prefs?.prefEducation ?? "Doesn't matter",
+      profession: qProfession ?? prefs?.prefProfession ?? "Doesn't matter",
+      location: qLocation ?? prefs?.prefLocation ?? "Anywhere",
+      nationality: qNationality ?? "Doesn't matter",
+      children: qChildren ?? "Doesn't matter",
+      language: qLanguage ?? "Doesn't matter",
+      height: qHeight ?? "Doesn't matter",
+    };
+
     const today = new Date();
-    
-    let dynamicFilter: any = {};
+    const maxDob = new Date();
+    maxDob.setFullYear(today.getFullYear() - filter.minAge);
+    const minDob = new Date();
+    minDob.setFullYear(today.getFullYear() - filter.maxAge - 1);
 
+    let searchFilter: any = {};
     if (q) {
-      // If searching explicitly by query, BYPASS strict age/religion filters 
-      // so they can actually find the person they are looking for!
       const searchRegex = { $regex: String(q), $options: 'i' };
-      dynamicFilter.$or = [
+      searchFilter.$or = [
         { name: searchRegex },
         { "profile.profession": searchRegex },
         { "profile.city": searchRegex }
       ];
-    } else {
-      // Apply strict Age and Religion filters only when browsing normally
-      const effectiveMinAge = minAge ? Number(minAge) : (prefs?.prefAgeMin || 18);
-      const effectiveMaxAge = maxAge ? Number(maxAge) : (prefs?.prefAgeMax || 60);
+    }
 
-      const maxDob = new Date();
-      maxDob.setFullYear(today.getFullYear() - effectiveMinAge);
-      const minDob = new Date();
-      minDob.setFullYear(today.getFullYear() - effectiveMaxAge - 1);
-      
-      dynamicFilter = { "profile.dob": { $gte: minDob, $lte: maxDob } };
+    const criteriaConditions: any[] = [];
+    const priorityBoosts: any[] = [];
+    let activeCriteriaCount = 0;
 
-      if (religion && religion !== 'All' && religion !== "Doesn't matter") {
-        dynamicFilter["profile.religion"] = { $regex: new RegExp(`^${religion}$`, 'i') };
+    // 1. Religion (Strict Priority Boost + Criteria Match)
+    if (filter.religion && filter.religion !== "Doesn't matter" && filter.religion !== "No preference") {
+      activeCriteriaCount++;
+      criteriaConditions.push({
+        $cond: [{ $regexMatch: { input: "$profile.religion", regex: new RegExp(`^${filter.religion.trim()}$`, "i") } }, 1, 0]
+      });
+      priorityBoosts.push({
+        $cond: [{ $regexMatch: { input: "$profile.religion", regex: new RegExp(`^${filter.religion.trim()}$`, "i") } }, 100, 0]
+      });
+    }
+
+    // 2. Sect / Caste
+    if (filter.caste && filter.caste !== "Doesn't matter" && filter.caste !== "No preference") {
+      activeCriteriaCount++;
+      criteriaConditions.push({
+        $cond: [{ $regexMatch: { input: "$profile.caste", regex: new RegExp(filter.caste.trim(), "i") } }, 1, 0]
+      });
+    }
+
+    // 3. Diet (Strict Priority Boost + Criteria Match)
+    if (filter.diet && filter.diet !== "Doesn't matter" && filter.diet !== "No preference") {
+      activeCriteriaCount++;
+      const d = filter.diet.toLowerCase();
+      if (d.includes("vegetarian") && !d.includes("non")) {
+        criteriaConditions.push({
+          $switch: {
+            branches: [
+              { case: { $regexMatch: { input: "$profile.diet", regex: /^(vegetarian|vegan)$/i } }, then: 1 },
+              { case: { $regexMatch: { input: "$profile.diet", regex: /^eggetarian$/i } }, then: 0.5 }
+            ],
+            default: 0
+          }
+        });
+        priorityBoosts.push({
+          $switch: {
+            branches: [
+              { case: { $regexMatch: { input: "$profile.diet", regex: /^(vegetarian|vegan)$/i } }, then: 200 },
+              { case: { $regexMatch: { input: "$profile.diet", regex: /^eggetarian$/i } }, then: 50 }
+            ],
+            default: 0
+          }
+        });
+      } else if (d.includes("vegan")) {
+        criteriaConditions.push({
+          $cond: [{ $regexMatch: { input: "$profile.diet", regex: /^vegan$/i } }, 1, 0]
+        });
+        priorityBoosts.push({
+          $cond: [{ $regexMatch: { input: "$profile.diet", regex: /^vegan$/i } }, 200, 0]
+        });
+      } else if (d.includes("non")) {
+        criteriaConditions.push({
+          $cond: [{ $regexMatch: { input: "$profile.diet", regex: /^(non-vegetarian|halal only)$/i } }, 1, 0]
+        });
+        priorityBoosts.push({
+          $cond: [{ $regexMatch: { input: "$profile.diet", regex: /^(non-vegetarian|halal only)$/i } }, 200, 0]
+        });
       }
     }
 
-    const scoreConditions: any[] = [];
-    if (prefs?.prefReligion && prefs.prefReligion !== "Doesn't matter") {
-      scoreConditions.push({
-        $cond: [{ $regexMatch: { input: "$profile.religion", regex: new RegExp(`^${prefs.prefReligion.trim()}$`, "i") } }, 1, 0]
+    // 4. Age Criteria
+    if (filter.minAge || filter.maxAge) {
+      activeCriteriaCount++;
+      criteriaConditions.push({
+        $cond: [
+          { $and: [{ $gte: ["$profile.dob", minDob] }, { $lte: ["$profile.dob", maxDob] }] },
+          1,
+          0
+        ]
       });
     }
-    if (prefs?.prefEducation && prefs.prefEducation !== "Doesn't matter") {
-      const cleanEdu = prefs.prefEducation.replace(/['’]s?/gi, "s?").trim();
-      scoreConditions.push({
-        $cond: [{ $regexMatch: { input: "$profile.educationLevel", regex: new RegExp(`^${cleanEdu}$`, "i") } }, 1, 0]
+
+    // 5. Marital Status
+    if (filter.maritalStatus && filter.maritalStatus.length > 0 && !filter.maritalStatus.includes("Doesn't matter") && !filter.maritalStatus.includes("No preference")) {
+      activeCriteriaCount++;
+      const pat = filter.maritalStatus.map(s => `^${s.trim()}$`).join("|");
+      criteriaConditions.push({
+        $cond: [{ $regexMatch: { input: "$profile.maritalStatus", regex: new RegExp(pat, "i") } }, 1, 0]
       });
     }
-    if (prefs?.prefMaritalStatus && prefs.prefMaritalStatus.length > 0 && !prefs.prefMaritalStatus.includes("Doesn't matter")) {
-      const statusPatterns = prefs.prefMaritalStatus.map(s => `^${s.trim()}$`).join("|");
-      scoreConditions.push({
-        $cond: [{ $regexMatch: { input: "$profile.maritalStatus", regex: new RegExp(statusPatterns, "i") } }, 1, 0]
-      });
-    }
-    if (prefs?.prefSmoking && prefs.prefSmoking !== "Doesn't matter") {
-      if (prefs.prefSmoking.toLowerCase().includes("non")) {
-        scoreConditions.push({
+
+    // 6. Smoking
+    if (filter.smoking && filter.smoking !== "Doesn't matter" && filter.smoking !== "No preference") {
+      activeCriteriaCount++;
+      if (filter.smoking.toLowerCase().includes("non")) {
+        criteriaConditions.push({
           $cond: [{ $regexMatch: { input: "$profile.smoke", regex: /^no$/i } }, 1, 0]
         });
       } else {
-        scoreConditions.push({
+        criteriaConditions.push({
           $cond: [{ $regexMatch: { input: "$profile.smoke", regex: /^(yes|occasionally)$/i } }, 1, 0]
         });
       }
     }
-    if (prefs?.prefDrinking && prefs.prefDrinking !== "Doesn't matter") {
-      if (prefs.prefDrinking.toLowerCase().includes("non")) {
-        scoreConditions.push({
+
+    // 7. Drinking / Alcohol
+    if (filter.drinking && filter.drinking !== "Doesn't matter" && filter.drinking !== "No preference") {
+      activeCriteriaCount++;
+      if (filter.drinking.toLowerCase().includes("non")) {
+        criteriaConditions.push({
           $cond: [{ $regexMatch: { input: "$profile.drink", regex: /^no$/i } }, 1, 0]
         });
       } else {
-        scoreConditions.push({
+        criteriaConditions.push({
           $cond: [{ $regexMatch: { input: "$profile.drink", regex: /^(occasionally|yes)$/i } }, 1, 0]
         });
       }
     }
-    if (prefs?.prefDiet && prefs.prefDiet !== "Doesn't matter") {
-      const diet = prefs.prefDiet.toLowerCase();
-      if (diet.includes("vegetarian") && !diet.includes("non")) {
-        scoreConditions.push({
-          $switch: {
-            branches: [
-              { case: { $regexMatch: { input: "$profile.diet", regex: /^(vegetarian|vegan)$/i } }, then: 5 },
-              { case: { $regexMatch: { input: "$profile.diet", regex: /^eggetarian$/i } }, then: 1 }
-            ],
-            default: 0
-          }
+
+    // 8. Education
+    if (filter.education && filter.education !== "Doesn't matter" && filter.education !== "No preference") {
+      activeCriteriaCount++;
+      const cleanEdu = filter.education.replace(/['’]s?/gi, "s?").trim();
+      criteriaConditions.push({
+        $cond: [{ $regexMatch: { input: "$profile.educationLevel", regex: new RegExp(`^${cleanEdu}$`, "i") } }, 1, 0]
+      });
+    }
+
+    // 9. Profession
+    if (filter.profession && filter.profession !== "Doesn't matter" && filter.profession !== "No preference") {
+      activeCriteriaCount++;
+      criteriaConditions.push({
+        $cond: [{ $regexMatch: { input: "$profile.profession", regex: new RegExp(filter.profession.trim(), "i") } }, 1, 0]
+      });
+    }
+
+    // 10. Location
+    if (filter.location && filter.location !== "Anywhere" && filter.location !== "No preference") {
+      activeCriteriaCount++;
+      criteriaConditions.push({
+        $cond: [
+          {
+            $or: [
+              { $regexMatch: { input: "$profile.country", regex: new RegExp(filter.location.trim(), "i") } },
+              { $regexMatch: { input: "$profile.state", regex: new RegExp(filter.location.trim(), "i") } },
+              { $regexMatch: { input: "$profile.city", regex: new RegExp(filter.location.trim(), "i") } }
+            ]
+          },
+          1,
+          0
+        ]
+      });
+    }
+
+    // 11. Nationality
+    if (filter.nationality && filter.nationality !== "Doesn't matter" && filter.nationality !== "No preference") {
+      activeCriteriaCount++;
+      criteriaConditions.push({
+        $cond: [{ $regexMatch: { input: "$profile.nationality", regex: new RegExp(filter.nationality.trim(), "i") } }, 1, 0]
+      });
+    }
+
+    // 12. Children
+    if (filter.children && filter.children !== "Doesn't matter" && filter.children !== "No preference" && filter.children !== "Open to all") {
+      activeCriteriaCount++;
+      if (filter.children.toLowerCase().includes("doesn't") || filter.children.toLowerCase().includes("no")) {
+        criteriaConditions.push({
+          $cond: [{ $regexMatch: { input: "$profile.haveChildren", regex: /^no$/i } }, 1, 0]
         });
-      } else if (diet.includes("vegan")) {
-        scoreConditions.push({
-          $switch: {
-            branches: [
-              { case: { $regexMatch: { input: "$profile.diet", regex: /^vegan$/i } }, then: 5 },
-              { case: { $regexMatch: { input: "$profile.diet", regex: /^vegetarian$/i } }, then: 1 }
-            ],
-            default: 0
-          }
-        });
-      } else if (diet.includes("non")) {
-        scoreConditions.push({
-          $switch: {
-            branches: [
-              { case: { $regexMatch: { input: "$profile.diet", regex: /^(non-vegetarian|halal only)$/i } }, then: 5 },
-              { case: { $regexMatch: { input: "$profile.diet", regex: /^eggetarian$/i } }, then: 1 }
-            ],
-            default: 0
-          }
+      } else if (filter.children.toLowerCase().includes("has") || filter.children.toLowerCase().includes("yes")) {
+        criteriaConditions.push({
+          $cond: [{ $regexMatch: { input: "$profile.haveChildren", regex: /^yes/i } }, 1, 0]
         });
       }
     }
 
-            // Pagination parameters
+    // 13. Language (Mother Tongue)
+    if (filter.language && filter.language !== "Doesn't matter" && filter.language !== "No preference") {
+      activeCriteriaCount++;
+      criteriaConditions.push({
+        $cond: [{ $regexMatch: { input: "$profile.motherTongue", regex: new RegExp(filter.language.trim(), "i") } }, 1, 0]
+      });
+    }
+
+    // 14. Height
+    if (filter.height && filter.height !== "Doesn't matter" && filter.height !== "No preference") {
+      activeCriteriaCount++;
+      let heightRegex: RegExp | null = null;
+      if (filter.height.includes("140 - 155")) {
+        heightRegex = /1(4\d|5[0-5])/;
+      } else if (filter.height.includes("155 - 165")) {
+        heightRegex = /1(5[5-9]|6[0-5])/;
+      } else if (filter.height.includes("165 - 175")) {
+        heightRegex = /1(6[5-9]|7[0-5])/;
+      } else if (filter.height.includes("175 - 185")) {
+        heightRegex = /1(7[5-9]|8[0-5])/;
+      } else if (filter.height.includes("185 cm+")) {
+        heightRegex = /1(8[5-9]|9\d)|2\d\d/;
+      }
+      if (heightRegex) {
+        criteriaConditions.push({
+          $cond: [{ $regexMatch: { input: "$profile.height", regex: heightRegex } }, 1, 0]
+        });
+      }
+    }
+
+    // Pagination parameters
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
     const skip = (page - 1) * limit;
 
-    const fetchProfiles = async (limitNum: number, secondarySort: any, applyPrefs: boolean = true) => {
+    const fetchProfiles = async (limitNum: number, secondarySort: any, applyScore: boolean = true) => {
       const pipeline: any[] = [
         { $match: baseMatch },
         {
@@ -166,20 +311,31 @@ export const getExploreData = asyncHandler(async (req: Request, res: Response, n
         { $unwind: "$profile" }
       ];
 
-      // If applyPrefs is true, apply Age and Religion filters.
-      // If there's a text search (q), we always apply it regardless of applyPrefs.
-      if (q) {
-        pipeline.push({ $match: dynamicFilter });
-      } else if (applyPrefs && Object.keys(dynamicFilter).length > 0) {
-        pipeline.push({ $match: dynamicFilter });
+      if (q && Object.keys(searchFilter).length > 0) {
+        pipeline.push({ $match: searchFilter });
       }
 
-      // Score and Sort
-      if (applyPrefs && scoreConditions.length > 0) {
-        pipeline.push({ $addFields: { matchScore: { $add: scoreConditions } } });
+      // Compute matchScore & criteria matches
+      if (applyScore && (criteriaConditions.length > 0 || priorityBoosts.length > 0)) {
+        pipeline.push({
+          $addFields: {
+            matchedCount: criteriaConditions.length > 0 ? { $round: [{ $add: criteriaConditions }, 0] } : 0,
+            priorityBoost: priorityBoosts.length > 0 ? { $add: priorityBoosts } : 0
+          }
+        });
+        pipeline.push({
+          $addFields: {
+            matchScore: { $add: ["$matchedCount", "$priorityBoost"] }
+          }
+        });
         pipeline.push({ $sort: { matchScore: -1, ...secondarySort } });
       } else {
-        // For Just Joined, we just sort directly by the secondarySort (which is { createdAt: -1 })
+        pipeline.push({
+          $addFields: {
+            matchedCount: 0,
+            matchScore: 0
+          }
+        });
         pipeline.push({ $sort: secondarySort });
       }
 
@@ -198,10 +354,13 @@ export const getExploreData = asyncHandler(async (req: Request, res: Response, n
       name: user.name,
       gender: user.gender,
       subscription: user.subscription,
-      profile: user.profile
+      profile: user.profile,
+      matchScore: user.matchScore || 0,
+      matchedCount: user.matchedCount || 0,
+      totalCriteria: activeCriteriaCount
     }));
 
-    // Just Joined BYPASSES preferences (applyPrefs = false)
+    // Just Joined BYPASSES preferences (applyScore = false)
     const justJoinedRaw = await fetchProfiles(limit, { createdAt: -1 }, false);
     const hasNextJoined = justJoinedRaw.length > limit;
     if (hasNextJoined) justJoinedRaw.pop();
@@ -211,7 +370,10 @@ export const getExploreData = asyncHandler(async (req: Request, res: Response, n
       name: user.name,
       gender: user.gender,
       subscription: user.subscription,
-      profile: user.profile
+      profile: user.profile,
+      matchScore: user.matchScore || 0,
+      matchedCount: user.matchedCount || 0,
+      totalCriteria: activeCriteriaCount
     }));
 
     res.status(200).json({ 

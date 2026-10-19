@@ -10,7 +10,6 @@ import { Step3Education } from "./steps/Step3Education";
 import { Step4Lifestyle } from "./steps/Step4Lifestyle";
 import { Step5Personality } from "./steps/Step5Personality";
 import { Step6Intentions } from "./steps/Step6Intentions";
-import { Step7Preferences } from "./steps/Step7Preferences";
 import { Step8Photos } from "./steps/Step8Photos";
 import { Step9Promises } from "./steps/Step9Promises";
 
@@ -49,7 +48,7 @@ export function OnboardingWizard() {
     const newData = { ...formData, ...stepData };
     setFormData(newData);
     
-    if (currentStep < 9) {
+    if (currentStep < 8) {
       const nextStep = currentStep + 1;
       setCurrentStep(nextStep);
       // Save draft to localStorage
@@ -90,9 +89,8 @@ export function OnboardingWizard() {
       case 4: return <Step4Lifestyle data={formData} onNext={handleNext} onBack={handleBack} />;
       case 5: return <Step5Personality data={formData} onNext={handleNext} onBack={handleBack} />;
       case 6: return <Step6Intentions data={formData} onNext={handleNext} onBack={handleBack} />;
-      case 7: return <Step7Preferences data={formData} onNext={handleNext} onBack={handleBack} />;
-      case 8: return <Step8Photos data={formData} onNext={handleNext} onBack={handleBack} />;
-      case 9: return <Step9Promises data={formData} onNext={handleNext} onBack={handleBack} isSubmitting={isSubmitting} />;
+      case 7: return <Step8Photos data={formData} onNext={handleNext} onBack={handleBack} />;
+      case 8: return <Step9Promises data={formData} onNext={handleNext} onBack={handleBack} isSubmitting={isSubmitting} />;
       default: return null;
     }
   };
@@ -115,7 +113,7 @@ export function OnboardingWizard() {
         <div className="absolute top-0 left-0 w-full h-2 bg-gray-100">
           <div 
             className="h-full bg-brand-900 transition-all duration-500 ease-out"
-            style={{ width: `${(currentStep / 9) * 100}%` }}
+            style={{ width: `${(currentStep / 8) * 100}%` }}
           ></div>
         </div>
         <div className="mt-4">

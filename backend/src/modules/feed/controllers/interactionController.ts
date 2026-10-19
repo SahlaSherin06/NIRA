@@ -126,31 +126,76 @@ export const recordAction = asyncHandler(async (req: Request, res: Response, nex
       await Interaction.findOneAndDelete({ actorId: targetId, targetId: actorId });
     }
 
-    if (action === "like") {
-      const { Notification } = require("../../notifications/models/Notification");
-      const currentUser = await User.findById(actorId);
-      
-      // Check for mutual match
-      const reciprocal = await Interaction.findOne({ actorId: targetId, targetId: actorId, action: "like" });
-      if (reciprocal) {
-        // It's a match! Notify both
-        await Notification.create([
-          { userId: targetId, type: "match", message: `You and ${currentUser?.name} matched!`, relatedUserId: actorId },
-          { userId: actorId, type: "match", message: `You and ${targetUser.name} matched!`, relatedUserId: targetId }
-        ]);
-      } else {
-        // Just an interest received for target
-        await Notification.create({
-          userId: targetId,
-          type: "interest_received",
-          message: `${currentUser?.name} sent you an interest!`,
-          relatedUserId: actorId
+    if (action === "like" || action === "superlike") {
+      try {
+        const { Notification } = require("../../notifications/models/Notification");
+        const currentUser = await User.findById(actorId);
+        const io = (req as any).io;
+        
+        // Check for mutual match (either like or superlike)
+        const reciprocal = await Interaction.findOne({ 
+          actorId: targetId, 
+          targetId: actorId, 
+          action: { $in: ["like", "superlike"] } 
         });
+
+        if (reciprocal) {
+          // It's a mutual match! Notify both users
+          const notifTarget = await Notification.create({
+            userId: targetId,
+            type: "match",
+            title: "It's a Match! 🎉",
+            message: `You and ${currentUser?.name || "Someone"} matched!`,
+            relatedUserId: actorId,
+            link: "/matches"
+          });
+
+          const notifActor = await Notification.create({
+            userId: actorId,
+            type: "match",
+            title: "It's a Match! 🎉",
+            message: `You and ${targetUser.name || "Someone"} matched!`,
+            relatedUserId: targetId,
+            link: "/matches"
+          });
+
+          if (io) {
+            io.to(targetId.toString()).emit("newNotification", notifTarget);
+            io.to(actorId.toString()).emit("newNotification", notifActor);
+          }
+        } else {
+          // Just a single interest/superlike received for target
+          if (action === "superlike") {
+            const notif = await Notification.create({
+              userId: targetId,
+              type: "superlike_received",
+              title: "Super Like Received! ⭐",
+              message: `${currentUser?.name || "A member"} sent you a Super Like!`,
+              relatedUserId: actorId,
+              link: "/matches"
+            });
+            if (io) {
+              io.to(targetId.toString()).emit("newNotification", notif);
+            }
+          } else {
+            const notif = await Notification.create({
+              userId: targetId,
+              type: "interest_received",
+              title: "New Interest Received",
+              message: `${currentUser?.name || "A member"} sent you an interest!`,
+              relatedUserId: actorId,
+              link: "/matches"
+            });
+            if (io) {
+              io.to(targetId.toString()).emit("newNotification", notif);
+            }
+          }
+        }
+      } catch (notifErr) {
+        console.error("Failed to create/emit like/superlike notification:", notifErr);
       }
     }
 
-    // If action is "like", we could check if the target already liked the actor to create a Match.
-    // For now, we just return success.
     res.status(200).json({ message: `Successfully recorded ${action}` });
 });
 

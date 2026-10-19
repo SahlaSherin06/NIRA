@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useMatchesData, useAcceptInterest, useRemoveInterest, useReportInterest, useBlockInterest } from "../matches.queries";
 import { MatchProfile } from "../matches.api";
 import { ProfileCard } from "../../feed/components/ProfileCard";
-import { MessageCircle, Crown, X, Check, MoreHorizontal, ShieldCheck, Heart, Ban } from "lucide-react";
+import { MessageCircle, Crown, X, Check, MoreHorizontal, ShieldCheck, Heart, Ban, Star, Sparkles } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 const NewMatchesCarousel = ({ profiles }: { profiles: MatchProfile[] }) => {
@@ -21,13 +21,26 @@ const NewMatchesCarousel = ({ profiles }: { profiles: MatchProfile[] }) => {
       <div className="flex space-x-6 overflow-x-auto pb-4 custom-scrollbar">
         {profiles.map(p => (
           <div key={p._id} className="flex flex-col items-center flex-shrink-0 cursor-pointer group">
-            <div className="relative w-16 h-16 rounded-full p-0.5 bg-gradient-to-tr from-brand-400 to-brand-900 mb-2 group-hover:scale-105 transition-transform">
+            <div className={`relative w-16 h-16 rounded-full p-0.5 mb-2 group-hover:scale-105 transition-transform ${
+              p.isSuperLike 
+                ? "bg-gradient-to-tr from-blue-500 via-indigo-500 to-yellow-400 shadow-md shadow-blue-500/30 ring-2 ring-blue-400" 
+                : "bg-gradient-to-tr from-brand-400 to-brand-900"
+            }`}>
               <div className="w-full h-full rounded-full border-2 border-white overflow-hidden bg-gray-100">
                 <img src={p.profile.mainPhoto} alt={p.name} className="w-full h-full object-cover" />
               </div>
-              <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
+              {p.isSuperLike ? (
+                <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-600 border-2 border-white rounded-full flex items-center justify-center text-white shadow-sm" title="Super Liked Match">
+                  <Star className="w-2.5 h-2.5 fill-yellow-300 text-yellow-300" />
+                </div>
+              ) : (
+                <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
+              )}
             </div>
-            <span className="text-xs font-bold text-gray-900">{p.name.split(' ')[0]}</span>
+            <span className="text-xs font-bold text-gray-900 flex items-center gap-1">
+              {p.name.split(' ')[0]}
+              {p.isSuperLike && <Star className="w-2.5 h-2.5 fill-yellow-400 text-yellow-500 inline" />}
+            </span>
             <span className="text-[10px] text-gray-500">
               {formatDistanceToNow(new Date(p.matchedAt), { addSuffix: true })}
             </span>
@@ -55,11 +68,28 @@ const MatchCard = React.memo(({ profile, type, onClick, isPremium }: { profile: 
     setReportReason("");
   };
 
+  const isSuper = profile.isSuperLike;
+
   return (
-    <div onClick={onClick} className="bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100/50 flex flex-col h-full group cursor-pointer relative">
+    <div 
+      onClick={onClick} 
+      className={`rounded-3xl overflow-hidden transition-all duration-300 flex flex-col h-full group cursor-pointer relative ${
+        isSuper
+          ? "bg-gradient-to-b from-blue-50/70 via-white to-white border-2 border-blue-500 shadow-xl shadow-blue-500/20 ring-4 ring-blue-500/10 hover:shadow-2xl hover:border-blue-600"
+          : "bg-white border border-gray-100/50 shadow-lg hover:shadow-2xl"
+      }`}
+    >
       
       {/* Image Section */}
       <div className="relative h-80 w-full bg-gray-100 overflow-hidden">
+        {/* Super Like Highlight Badge */}
+        {isSuper && (
+          <div className="absolute top-4 left-4 z-20 flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white rounded-full text-xs font-black shadow-lg shadow-blue-500/40 border border-blue-300/40 animate-pulse">
+            <Star className="w-3.5 h-3.5 fill-yellow-300 text-yellow-300 drop-shadow" />
+            <span className="tracking-wider uppercase text-[10px]">Super Liked You</span>
+          </div>
+        )}
+
         <img 
           src={profile.profile.mainPhoto} 
           alt={profile.name} 
@@ -68,8 +98,6 @@ const MatchCard = React.memo(({ profile, type, onClick, isPremium }: { profile: 
         
         {/* Deep Gradient for readability */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-
-        
 
         {/* Text overlaid on image */}
         <div className="absolute bottom-5 left-5 right-5">
@@ -85,7 +113,18 @@ const MatchCard = React.memo(({ profile, type, onClick, isPremium }: { profile: 
       {/* Info Section */}
       <div className="p-5 flex-1 flex flex-col bg-white">
         
-        
+        {/* Super Like Banner for Received */}
+        {isSuper && type === 'received' && (
+          <div className="mb-4 px-3.5 py-2.5 bg-gradient-to-r from-blue-50 via-indigo-50/60 to-blue-50 border border-blue-200/90 rounded-2xl flex items-center justify-between shadow-xs">
+            <div className="flex items-center gap-2 text-blue-950 font-bold text-xs">
+              <Sparkles className="w-4 h-4 text-blue-600 fill-blue-600/30" />
+              <span>Super Liked your profile!</span>
+            </div>
+            <span className="text-[10px] font-black uppercase text-blue-700 bg-white px-2.5 py-0.5 rounded-full border border-blue-200 shadow-xs">
+              Priority Match
+            </span>
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-2 mb-6">
           <span className="px-3 py-1.5 bg-brand-50/70 text-brand-900 text-[11px] font-bold rounded-xl border border-brand-100/50">
@@ -111,10 +150,23 @@ const MatchCard = React.memo(({ profile, type, onClick, isPremium }: { profile: 
             <button 
               onClick={(e) => { e.stopPropagation(); acceptInterest(profile._id); }}
               disabled={isPending}
-              className="flex-1 bg-gradient-to-r from-green-400 to-green-500 hover:from-green-500 hover:to-green-600 text-white py-3 rounded-2xl text-sm font-bold flex items-center justify-center transition-all shadow-md hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-50"
+              className={`flex-1 py-3 rounded-2xl text-sm font-bold flex items-center justify-center transition-all shadow-md hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-50 ${
+                isSuper 
+                  ? "bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-800 text-white shadow-blue-500/30 font-black"
+                  : "bg-gradient-to-r from-green-400 to-green-500 hover:from-green-500 hover:to-green-600 text-white"
+              }`}
             >
-              <Check className="w-4 h-4 mr-2" />
-              {isPending ? 'Accepting...' : 'Accept'}
+              {isSuper ? (
+                <>
+                  <Star className="w-4 h-4 mr-2 fill-yellow-300 text-yellow-300" />
+                  {isPending ? 'Accepting...' : 'Accept Super Like'}
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4 mr-2" />
+                  {isPending ? 'Accepting...' : 'Accept'}
+                </>
+              )}
             </button>
           )}
 
@@ -266,6 +318,7 @@ export function MatchesFeed() {
   };
 
   const activeProfiles = getActiveProfiles();
+  const superLikeCount = data.interestsReceived.filter(p => p.isSuperLike).length;
 
   return (
     <div className="w-full max-w-6xl mx-auto flex flex-col pt-4">
@@ -300,6 +353,12 @@ export function MatchesFeed() {
           <span className={`ml-2 px-2 py-0.5 rounded-full text-[10px] ${activeTab === 'received' ? 'bg-brand-900 text-white' : 'bg-gray-100'}`}>
             {data.interestsReceived.length}
           </span>
+          {superLikeCount > 0 && (
+            <span className="ml-2 px-2 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm flex items-center gap-1 animate-pulse">
+              <Star className="w-2.5 h-2.5 fill-yellow-300 text-yellow-300" />
+              {superLikeCount} Super
+            </span>
+          )}
         </button>
 
         <button 

@@ -3,6 +3,8 @@ import { Recommendation } from "../feed/feed.api";
 
 export interface MatchProfile extends Recommendation {
   matchedAt: string; 
+  isSuperLike?: boolean;
+  interactionType?: "like" | "superlike";
 }
 
 export interface MatchesResponse {

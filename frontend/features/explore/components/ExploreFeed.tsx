@@ -2,11 +2,13 @@
 
 import React, { useState } from "react";
 import { ChevronLeft, ChevronRight, MapPin,
-  Crown, Heart, ShieldCheck, Sparkles, Search, Filter, X, Lock } from "lucide-react";
+  Crown, Heart, ShieldCheck, Sparkles, Search, SlidersHorizontal, X, Lock } from "lucide-react";
 import { useExploreData } from "../explore.queries";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/features/auth/auth.queries";
-import { Recommendation } from "@/features/feed/feed.api";
+import { Recommendation, FeedFilterParams } from "@/features/feed/feed.api";
+import { PartnerFilterPanel } from "@/features/feed/components/PartnerFilterPanel";
+import { api } from "@/lib/axios";
 
 interface ExploreFeedProps {
   onProfileClick: (profile: Recommendation) => void;
@@ -31,13 +33,12 @@ const ProfileCardSmall = React.memo(({ profile, type, onClick, isPremium }: { pr
       
       {/* Top badges */}
       <div className="absolute top-4 left-4 z-10 flex space-x-2">
-        {type === 'complete' && (
+        {type === 'complete' ? (
           <span className="px-3 py-1 bg-white/90 backdrop-blur text-xs font-semibold text-gray-700 rounded-full flex items-center shadow-sm">
-            <span className="w-2 h-2 bg-yellow-400 rounded-full mr-2"></span>
-            100% Bio Complete
+            <span className="w-2 h-2 bg-brand-900 rounded-full mr-2"></span>
+            Recommended
           </span>
-        )}
-        {type === 'new' && (
+        ) : (
           <span className="px-3 py-1 bg-brand-50/90 backdrop-blur text-xs font-semibold text-brand-900 rounded-full flex items-center shadow-sm">
             <Sparkles className="w-3 h-3 mr-1 text-brand-500" />
             Just Joined
@@ -71,66 +72,80 @@ const ProfileCardSmall = React.memo(({ profile, type, onClick, isPremium }: { pr
                   <Crown className="w-3.5 h-3.5 text-white" />
                 </div>
               )}
-            
           </h3>
-          <div className="flex items-center text-white/90 text-sm font-medium mt-1">
-            <MapPin className="w-3 h-3 mr-1" />
-            {profile.profile.city} • {profile.profile.profession}
+          <div className="flex items-center text-xs text-white/80 mt-1">
+            <MapPin className="w-3.5 h-3.5 mr-1" />
+            <span>{profile.profile.city}, {profile.profile.country}</span>
           </div>
         </div>
       </div>
 
-      <div className="p-5 bg-white">
-        <p className="text-sm text-gray-500 line-clamp-2 leading-relaxed mb-4">
-          {profile.profile.bio || `Passionate about creating spaces that breathe. Avid reader of contemporary fiction.`}
-        </p>
-
-        <div className="flex flex-wrap gap-2 mb-5">
-          <span className="px-2 py-1 bg-brand-50 text-brand-900 text-[10px] font-bold uppercase tracking-wider rounded-md">
+      {/* Quick details */}
+      <div className="p-5">
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          <span className="text-xs bg-gray-50 border border-gray-100 text-gray-600 px-2.5 py-1 rounded-lg">
+            {profile.profile.educationLevel}
+          </span>
+          <span className="text-xs bg-gray-50 border border-gray-100 text-gray-600 px-2.5 py-1 rounded-lg">
+            {profile.profile.profession}
+          </span>
+          <span className="text-xs bg-brand-50/50 border border-brand-100/50 text-brand-900 px-2.5 py-1 rounded-lg font-medium">
             {profile.profile.diet}
           </span>
-          <span className="px-2 py-1 bg-gray-50 text-gray-600 text-[10px] font-bold uppercase tracking-wider rounded-md">
-            {profile.profile.smoke === "Non-smoker" ? "Non-Smoker" : profile.profile.smoke}
-          </span>
         </div>
-
-        <div className="pt-4 border-t border-gray-50">
-          <button className="w-full py-2.5 bg-brand-50 hover:bg-brand-100 text-brand-900 text-sm font-bold rounded-xl transition-colors">
-            View Bio
-          </button>
-        </div>
+        <p className="text-gray-500 text-xs line-clamp-2 leading-relaxed">
+          {profile.profile.bio || "Looking to build a meaningful connection based on shared values and trust."}
+        </p>
       </div>
+
     </div>
   );
 });
 
-/**
- * Component: ExploreFeed
- * Renders the UI and handles the internal logic for the Explore Feed.
- */
+ProfileCardSmall.displayName = 'ProfileCardSmall';
+
 export function ExploreFeed({ onProfileClick }: ExploreFeedProps) {
   const { data: session } = useSession();
   const isPremium = session?.user?.subscription?.plan === 'premium';
+  
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [filters, setFilters] = useState<FeedFilterParams>({});
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
-  // Debounce the search query to prevent spamming the backend
+  // Debounce search query
   React.useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedQuery(searchQuery);
-    }, 400); // 400ms delay
+    }, 400);
 
     return () => {
       clearTimeout(handler);
     };
   }, [searchQuery]);
 
-  
-  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useExploreData(debouncedQuery ? { q: debouncedQuery } : {});
+  const { data, isLoading } = useExploreData({
+    q: debouncedQuery || undefined,
+    ...filters
+  });
+
+  const handleApplyFilters = async (newFilters: FeedFilterParams) => {
+    setFilters(newFilters);
+    try {
+      await api.put("/profile/me", { preferences: newFilters });
+    } catch (e) {
+      console.error("Failed to auto-save preferences", e);
+    }
+  };
 
   const clearFilters = () => {
     setSearchQuery("");
   };
+
+  const activeFilterCount = Object.keys(filters).filter(k => {
+    const v = (filters as any)[k];
+    return v !== undefined && v !== "Doesn't matter" && v !== "No preference" && v !== "Anywhere" && (!Array.isArray(v) || v.length > 0);
+  }).length;
 
   const renderContent = () => {
     if (isLoading || !data) {
@@ -144,7 +159,6 @@ export function ExploreFeed({ onProfileClick }: ExploreFeedProps) {
     const completeBios = data.pages.flatMap(page => page.completeBios);
     const justJoined = data.pages.flatMap(page => page.justJoined);
     const totalResults = completeBios.length + justJoined.length;
-
 
     return (
       <>
@@ -166,21 +180,13 @@ export function ExploreFeed({ onProfileClick }: ExploreFeedProps) {
           </div>
         )}
 
-        {/* Complete Bios Section */}
+        {/* Recommended Section */}
         {completeBios.length > 0 && (
           <div className="mb-12">
             <div className="flex justify-between items-end mb-6">
               <div>
                 <h2 className="text-2xl font-bold font-serif text-gray-900">Recommended For You</h2>
                 <p className="text-sm text-gray-500 mt-1">Curated profiles matching your preferences and lifestyle.</p>
-              </div>
-              <div className="hidden md:flex space-x-2">
-                <button className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-brand-50 hover:text-brand-900 transition-colors">
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                <button className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-brand-50 hover:text-brand-900 transition-colors">
-                  <ChevronRight className="w-5 h-5" />
-                </button>
               </div>
             </div>
 
@@ -208,14 +214,6 @@ export function ExploreFeed({ onProfileClick }: ExploreFeedProps) {
                 </h2>
                 <p className="text-sm text-gray-500 mt-1">Freshly onboarded members looking for meaningful connections.</p>
               </div>
-              <div className="hidden md:flex space-x-2">
-                <button className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-brand-50 hover:text-brand-900 transition-colors">
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                <button className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-brand-50 hover:text-brand-900 transition-colors">
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              </div>
             </div>
 
             <HorizontalScrollContainer>
@@ -236,17 +234,16 @@ export function ExploreFeed({ onProfileClick }: ExploreFeedProps) {
 
   return (
     <div className="flex-1 w-full relative">
-      
-      {/* Top Search Bar (Live Filter) */}
-      <div className="mb-10 bg-white p-3 md:p-4 rounded-3xl shadow-sm border border-gray-100 flex items-center relative z-20">
-        <div className="flex-1 w-full relative">
+      {/* Top Search Bar & Mobile Filter Trigger */}
+      <div className="mb-8 flex items-center gap-3">
+        <div className="flex-1 bg-white p-2.5 md:p-3 rounded-2xl shadow-sm border border-gray-100 flex items-center relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input 
             type="text" 
             placeholder="Search by name, city, profession..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-gray-50 border-none rounded-2xl py-3 pl-11 pr-11 text-sm font-medium text-gray-900 focus:ring-2 focus:ring-brand-900/20 placeholder-gray-400 transition-shadow"
+            className="w-full bg-gray-50 border-none rounded-xl py-2.5 pl-11 pr-11 text-sm font-medium text-gray-900 focus:ring-2 focus:ring-brand-900/20 placeholder-gray-400 transition-shadow"
           />
           {searchQuery && (
             <button 
@@ -257,12 +254,52 @@ export function ExploreFeed({ onProfileClick }: ExploreFeedProps) {
             </button>
           )}
         </div>
+
+        {/* Mobile Filter Button */}
+        <button
+          onClick={() => setIsMobileFilterOpen(true)}
+          className="lg:hidden flex items-center gap-2 px-4 py-3 bg-white rounded-2xl border border-gray-200 shadow-sm text-brand-900 font-semibold text-sm hover:bg-brand-50 transition-colors shrink-0"
+        >
+          <SlidersHorizontal className="w-4 h-4 text-brand-900" />
+          <span>Filters</span>
+        </button>
       </div>
 
-      {renderContent()}
+      {/* Main Two-Column Layout on Laptop: Filter on LEFT, Content on RIGHT */}
+      <div className="flex flex-col lg:flex-row gap-8 items-start">
+        {/* Left Column: Filter Section on Laptop/Desktop - Extending to Just Joined NIRA cards */}
+        <div className="hidden lg:block w-80 xl:w-96 shrink-0 sticky top-24 h-[1320px] overflow-hidden rounded-3xl">
+          <PartnerFilterPanel
+            initialFilters={filters}
+            onApply={handleApplyFilters}
+          />
+        </div>
 
+        {/* Right: Explore Feed Content */}
+        <div className="flex-1 min-w-0">
+          {renderContent()}
+        </div>
+      </div>
+
+      {/* Mobile Responsive Filter Drawer */}
+      {isMobileFilterOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden flex">
+          {/* Backdrop */}
+          <div 
+            onClick={() => setIsMobileFilterOpen(false)} 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" 
+          />
+          {/* Slide-over Drawer */}
+          <div className="relative ml-auto w-full max-w-md h-full bg-[#FAF8F7] shadow-2xl flex flex-col z-10 animate-in slide-in-from-right duration-300">
+            <PartnerFilterPanel 
+              initialFilters={filters} 
+              onApply={handleApplyFilters} 
+              onClose={() => setIsMobileFilterOpen(false)} 
+              isMobile={true} 
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
-
