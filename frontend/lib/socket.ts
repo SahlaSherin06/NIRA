@@ -8,7 +8,7 @@ export const getSocket = (): Socket => {
       process.env.NEXT_PUBLIC_SOCKET_URL ||
       (process.env.NEXT_PUBLIC_BACKEND_URL
         ? process.env.NEXT_PUBLIC_BACKEND_URL.replace(/\/api\/?$/, "")
-        : "http://localhost:5000");
+        : "https://beats-soma-argued-javascript.trycloudflare.com");
 
     socket = io(backendUrl, {
       withCredentials: true,
