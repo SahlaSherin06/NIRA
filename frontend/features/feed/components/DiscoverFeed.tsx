@@ -9,12 +9,59 @@ import { FloatingActions } from "./FloatingActions";
 import { Heart, SlidersHorizontal } from "lucide-react";
 import { PartnerFilterPanel } from "./PartnerFilterPanel";
 import { api } from "@/lib/axios";
+import { useMyProfile, profileKeys } from "@/features/profile/profile.queries";
+import { useQueryClient } from "@tanstack/react-query";
+
+const FEED_FILTERS_STORAGE_KEY = "nira_feed_filters";
+
+function getSavedFeedFilters(): FeedFilterParams {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(FEED_FILTERS_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch (err) {
+    return {};
+  }
+}
 
 export function DiscoverFeed() {
-  const [filters, setFilters] = useState<FeedFilterParams>({});
+  const queryClient = useQueryClient();
+  const { data: myProfile } = useMyProfile();
+  const [filters, setFilters] = useState<FeedFilterParams>(getSavedFeedFilters);
+  const [hasInitializedFilters, setHasInitializedFilters] = useState(false);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
 
-  const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } = useRecommendations(filters);
+  // Immediately hydrate filters from localStorage on client mount BEFORE queries run
+  useEffect(() => {
+    const local = getSavedFeedFilters();
+    if (Object.keys(local).length > 0) {
+      setFilters(local);
+    }
+    setIsHydrated(true);
+  }, []);
+
+  // Sync saved preferences from MongoDB on page load/refresh if localStorage was empty
+  useEffect(() => {
+    if (myProfile?.preferences && !hasInitializedFilters) {
+      const p = myProfile.preferences as any;
+      const mongoSaved = p.savedFilters || {};
+      const localFilters = getSavedFeedFilters();
+      const hasLocalFilters = Object.keys(localFilters).length > 0;
+
+      if (!hasLocalFilters && Object.keys(mongoSaved).length > 0) {
+        setFilters(mongoSaved);
+        try {
+          localStorage.setItem(FEED_FILTERS_STORAGE_KEY, JSON.stringify(mongoSaved));
+        } catch (_) {}
+      }
+      setHasInitializedFilters(true);
+    }
+  }, [myProfile, hasInitializedFilters]);
+
+  const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } = useRecommendations(filters, { enabled: isHydrated });
   const interactMutation = useInteract();
   const { data: session } = useSession();
   const isPremium = session?.user?.subscription?.plan === 'premium';
@@ -22,6 +69,12 @@ export function DiscoverFeed() {
   // Local queue of profiles to show
   const [queue, setQueue] = useState<Recommendation[]>([]);
   const [loadedPages, setLoadedPages] = useState<number>(0);
+
+  // Whenever filters change, reset queue and loadedPages so that new filtered data replaces the queue cleanly
+  useEffect(() => {
+    setQueue([]);
+    setLoadedPages(0);
+  }, [filters]);
 
   // Tracking if a card is animating out
   const [animatingOut, setAnimatingOut] = useState<"like" | "superlike" | "pass" | "block" | "report" | null>(null);
@@ -32,16 +85,43 @@ export function DiscoverFeed() {
   const bottomRef = React.useRef<HTMLDivElement>(null);
   const [isAtBottom, setIsAtBottom] = React.useState(false);
 
-  // Reset queue when filters change
+  // Apply filters and persist to localStorage & MongoDB
   const handleApplyFilters = async (newFilters: FeedFilterParams) => {
     setFilters(newFilters);
     setQueue([]);
     setLoadedPages(0);
-    // Persist to user's saved preferences
+
+    // Save immediately to localStorage
     try {
-      await api.put("/profile/me", { preferences: newFilters });
+      localStorage.setItem(FEED_FILTERS_STORAGE_KEY, JSON.stringify(newFilters));
     } catch (e) {
-      console.error("Failed to auto-save preferences", e);
+      console.warn("Failed to save filters to localStorage", e);
+    }
+
+    // Persist to user's saved preferences in MongoDB
+    try {
+      await api.put("/profile/me", { preferences: { ...newFilters, savedFilters: newFilters } });
+      queryClient.invalidateQueries({ queryKey: profileKeys.me });
+    } catch (e) {
+      console.error("Failed to auto-save preferences to MongoDB", e);
+    }
+  };
+
+  // Clear filters and wipe from localStorage & MongoDB
+  const handleClearAllFilters = async () => {
+    setFilters({});
+    setQueue([]);
+    setLoadedPages(0);
+
+    try {
+      localStorage.removeItem(FEED_FILTERS_STORAGE_KEY);
+    } catch (_) {}
+
+    try {
+      await api.put("/profile/me", { preferences: { savedFilters: {} } });
+      queryClient.invalidateQueries({ queryKey: profileKeys.me });
+    } catch (e) {
+      console.error("Failed to clear preferences in MongoDB", e);
     }
   };
 
@@ -50,7 +130,7 @@ export function DiscoverFeed() {
     if (data && data.pages.length > loadedPages) {
       const newPages = data.pages.slice(loadedPages);
       const newProfiles = newPages.flatMap(p => p.recommendations);
-      setQueue(prev => [...prev, ...newProfiles]);
+      setQueue(prev => (loadedPages === 0 ? newProfiles : [...prev, ...newProfiles]));
       setLoadedPages(data.pages.length);
     }
   }, [data, loadedPages]);
@@ -133,17 +213,18 @@ export function DiscoverFeed() {
 
       {/* Main Two-Column Layout on Laptop: Filter Panel on LEFT, Feed on RIGHT */}
       <div className="flex flex-col lg:flex-row gap-8 items-start justify-center">
-        {/* Left Column: Filter Section on Laptop/Desktop - Extending down with profile card */}
-        <div className="hidden lg:block w-80 xl:w-96 shrink-0 sticky top-24 h-[1120px] overflow-hidden rounded-3xl">
+        {/* Left Column: Filter Section on Laptop/Desktop - Sized cleanly to viewport */}
+        <div className="hidden lg:block w-80 xl:w-96 shrink-0 sticky top-24 h-[calc(100vh-7.5rem)] max-h-[820px] overflow-hidden rounded-3xl">
           <PartnerFilterPanel
             initialFilters={filters}
             onApply={handleApplyFilters}
+            onClearAll={handleClearAllFilters}
           />
         </div>
 
         {/* Right / Center: Profile Cards Swiper Area */}
         <div className="w-full max-w-xl mx-auto flex flex-col items-center min-h-[80vh]">
-          {isLoading && queue.length === 0 ? (
+          {(!isHydrated || isLoading) && queue.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-[70vh]">
               <div className="w-12 h-12 border-4 border-brand-900 border-t-transparent rounded-full animate-spin mb-4"></div>
               <p className="text-gray-500 font-medium animate-pulse">Finding your perfect match...</p>
@@ -179,8 +260,11 @@ export function DiscoverFeed() {
                 onLike={() => handleInteract("like")} 
                 onSuperLike={() => handleInteract("superlike")} 
                 onPass={() => handleInteract("pass")}
-                disabled={!!animatingOut || interactMutation.isPending}
-                className={isAtBottom ? "absolute bottom-6 left-0 flex justify-center space-x-3 md:space-x-6" : "fixed bottom-10 left-1/2 -translate-x-1/2 lg:left-[calc(50%+12rem)] flex justify-center space-x-3 md:space-x-6 max-w-xl z-30"}
+                className={
+                  isAtBottom 
+                    ? "absolute bottom-20 md:bottom-6 left-0 w-full flex justify-center space-x-3 md:space-x-6 z-40" 
+                    : "fixed bottom-[calc(5rem+env(safe-area-inset-bottom,0px))] md:bottom-10 left-1/2 -translate-x-1/2 lg:left-[calc(50%+12rem)] w-full max-w-xl flex justify-center space-x-3 md:space-x-6 z-40"
+                }
               />
             </div>
           )}
@@ -200,6 +284,7 @@ export function DiscoverFeed() {
             <PartnerFilterPanel 
               initialFilters={filters} 
               onApply={handleApplyFilters} 
+              onClearAll={handleClearAllFilters}
               onClose={() => setIsMobileFilterOpen(false)} 
               isMobile={true} 
             />

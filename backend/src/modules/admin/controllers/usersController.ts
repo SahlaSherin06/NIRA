@@ -102,6 +102,18 @@ export const toggleBanUser = asyncHandler(async (req: Request, res: Response, ne
   user.isBanned = !user.isBanned;
   await user.save();
 
+  // If user was suspended, immediately emit real-time event and force-disconnect their active sockets
+  if (user.isBanned) {
+    const io = (req as any).io;
+    if (io) {
+      io.to(user._id.toString()).emit("accountSuspended", {
+        message: "Your account has been suspended by the administrator due to policy violations.",
+        isBanned: true,
+      });
+      io.in(user._id.toString()).disconnectSockets(true);
+    }
+  }
+
   res.status(200).json({
     message: user.isBanned ? "User suspended successfully" : "User unbanned successfully",
     isBanned: user.isBanned,

@@ -51,7 +51,10 @@ export const getConversations = asyncHandler(async (req: Request, res: Response,
 
   // 4. Fetch user details
   const User = require("../../auth/models/User").User;
-  const allUsers = await User.find({ _id: { $in: allVisibleUserIds } }) as any[];
+  const allUsers = await User.find({
+    _id: { $in: allVisibleUserIds },
+    isBanned: { $ne: true },
+  }) as any[];
   
   // Fetch profiles safely
   let mutualProfiles: any[] = [];
@@ -109,6 +112,12 @@ export const getMessages = asyncHandler(async (req: Request, res: Response, next
 
   if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
+  const User = require("../../auth/models/User").User;
+  const targetUser = await User.findById(targetId).select("isBanned");
+  if (!targetUser || targetUser.isBanned) {
+    return res.status(403).json({ message: "This user's account has been suspended.", isSuspended: true });
+  }
+
   const conversation = await Conversation.findOne({
     participants: { $all: [userId, targetId] }
   });
@@ -140,6 +149,12 @@ export const sendMessage = asyncHandler(async (req: Request, res: Response, next
 
   if (!userId) return res.status(401).json({ message: "Unauthorized" });
   if (!content) return res.status(400).json({ message: "Content is required" });
+
+  const User = require("../../auth/models/User").User;
+  const targetUser = await User.findById(targetId).select("isBanned");
+  if (!targetUser || targetUser.isBanned) {
+    return res.status(403).json({ message: "This account has been suspended and is no longer available.", isSuspended: true });
+  }
 
   // Check blocks
   const isBlockedByThem = await Interaction.findOne({ actorId: targetId, targetId: userId, action: "block" });

@@ -40,6 +40,11 @@ export const recordAction = asyncHandler(async (req: Request, res: Response, nex
       return;
     }
 
+    if (targetUser.isBanned) {
+      res.status(403).json({ message: "This user's account has been suspended." });
+      return;
+    }
+
     const isPremium = actor.subscription?.plan === 'premium';
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);

@@ -247,7 +247,9 @@ export const resolveAdminReport = asyncHandler(async (req: Request, res: Respons
     if (io) {
       io.to(report.targetId.toString()).emit("accountSuspended", {
         message: "Your account has been suspended for policy violations.",
+        isBanned: true,
       });
+      io.in(report.targetId.toString()).disconnectSockets(true);
     }
   }
 

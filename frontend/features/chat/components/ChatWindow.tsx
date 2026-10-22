@@ -22,6 +22,7 @@ interface ChatWindowProps {
   unblockMutationPending: boolean;
   handleSendLike: () => void;
   isSendLikePending: boolean;
+  isSuspended?: boolean;
 }
 
 export function ChatWindow({
@@ -43,7 +44,8 @@ export function ChatWindow({
   handleUnblockUser,
   unblockMutationPending,
   handleSendLike,
-  isSendLikePending
+  isSendLikePending,
+  isSuspended
 }: ChatWindowProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -197,7 +199,12 @@ export function ChatWindow({
 
       {/* Input Area */}
       <div className="p-5 bg-white/50 backdrop-blur-md z-20">
-        {activeConvo?.isBlockedByMe ? (
+        {isSuspended ? (
+          <div className="bg-red-50 border border-red-200 rounded-xl px-6 py-4 flex flex-col items-center justify-center text-center">
+            <p className="text-sm font-semibold text-red-700">This account has been suspended.</p>
+            <p className="text-xs text-red-500 mt-1">This user is no longer active on NIRA due to community guidelines violations.</p>
+          </div>
+        ) : activeConvo?.isBlockedByMe ? (
           <div className="bg-gray-50 border border-gray-200 rounded-xl px-6 py-4 flex flex-col items-center justify-center text-center">
             <p className="text-sm font-medium text-gray-600 mb-2">You blocked this profile.</p>
             <button 

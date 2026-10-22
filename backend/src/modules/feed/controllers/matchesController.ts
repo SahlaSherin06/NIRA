@@ -49,7 +49,7 @@ export const getMatchesData = asyncHandler(async (req: Request, res: Response, n
   const fetchPopulatedUsers = async (ids: string[], context: 'mutual' | 'received' | 'sent') => {
     const objectIds = ids.map(id => new mongoose.Types.ObjectId(id));
     const pipeline = [
-      { $match: { _id: { $in: objectIds } } },
+      { $match: { _id: { $in: objectIds }, isBanned: { $ne: true } } },
       {
         $lookup: {
           from: "profiles",

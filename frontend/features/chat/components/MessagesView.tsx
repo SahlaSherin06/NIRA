@@ -30,7 +30,8 @@ export function MessagesView() {
   const { data: session } = useSession();
   const { data: myProfile } = useMyProfile();
   const { data: conversations, isLoading: isConversationsLoading } = useConversations();
-  const { data: messages, isLoading: isMessagesLoading } = useMessages(activeChat || "");
+  const { data: messages, isLoading: isMessagesLoading, error: messagesError } = useMessages(activeChat || "");
+  const isSuspendedUser = !!(messagesError as any)?.response?.data?.isSuspended;
   
   const sendMessageMutation = useSendMessage();
   const clearChatMutation = useClearChat();
@@ -63,6 +64,15 @@ export function MessagesView() {
       }
     });
 
+    // Real-time Force Logout if admin suspends this account while on chat page
+    newSocket.on("accountSuspended", () => {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("nira_access_token");
+        queryClient.clear();
+        window.location.href = "/login?suspended=true";
+      }
+    });
+
     return () => {
       newSocket.disconnect();
     };
@@ -74,7 +84,14 @@ export function MessagesView() {
     
     sendMessageMutation.mutate(
       { targetId: activeChat, content: messageText },
-      { onSuccess: () => setMessageText("") }
+      { 
+        onSuccess: () => setMessageText(""),
+        onError: (err: any) => {
+          if (err.response?.data?.isSuspended) {
+            queryClient.invalidateQueries({ queryKey: chatKeys.conversations() });
+          }
+        }
+      }
     );
   };
 
@@ -182,6 +199,7 @@ export function MessagesView() {
           unblockMutationPending={unblockMutation.isPending}
           handleSendLike={handleSendLike}
           isSendLikePending={interactMutation.isPending}
+          isSuspended={isSuspendedUser}
         />
 
       </div>

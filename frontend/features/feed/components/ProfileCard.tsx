@@ -38,7 +38,7 @@ export function ProfileCard({ user, onAction, isMatch = false }: ProfileCardProp
 
   return (
     <div className="w-full bg-white rounded-3xl shadow-xl overflow-hidden flex flex-col mb-0 pb-4">
-      <div className="flex-1 pb-16">
+      <div className="flex-1 pb-28 md:pb-20">
         
         {/* SECTION 1: Main Photo */}
         <div className="relative w-full aspect-[4/5] bg-gray-100">

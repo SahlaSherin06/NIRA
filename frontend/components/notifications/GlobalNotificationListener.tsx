@@ -39,6 +39,15 @@ export function GlobalNotificationListener() {
       queryClient.invalidateQueries({ queryKey: notificationKeys.all });
     });
 
+    // Real-time Force Logout if admin suspends this account
+    socket.on("accountSuspended", () => {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("nira_access_token");
+        queryClient.clear();
+        window.location.href = "/login?suspended=true";
+      }
+    });
+
     return () => {
       socket.disconnect();
     };

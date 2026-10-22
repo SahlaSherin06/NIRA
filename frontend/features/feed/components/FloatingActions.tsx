@@ -11,7 +11,7 @@ interface FloatingActionsProps {
 
 export function FloatingActions({ onPass, onLike, onSuperLike, disabled, className }: FloatingActionsProps) {
   return (
-    <div className={`flex items-center justify-between w-full px-6 md:px-12 z-50 pointer-events-none ${className || ''}`}>
+    <div className={`flex items-center justify-center pointer-events-none ${className || ''}`}>
 
       {/* Pass / Cross Button */}
       <button

@@ -88,7 +88,7 @@ export function ExploreView() {
                 onSuperLike={() => handleInteract("superlike")} 
                 onPass={() => handleInteract("pass")}
                 disabled={interactMutation.isPending}
-                className="absolute bottom-6 left-1/2 -translate-x-1/2 flex justify-center space-x-3 md:space-x-6 max-w-2xl"
+                className="absolute bottom-6 left-1/2 -translate-x-1/2 w-full flex justify-center space-x-3 md:space-x-6 max-w-2xl z-40"
               />
             </div>
           </div>

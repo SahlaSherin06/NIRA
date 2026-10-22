@@ -67,6 +67,8 @@ export interface FeedFilterParams {
   children?: string;
   language?: string;
   height?: string;
+  marriagePlans?: string;
+  relocationPlans?: string;
 }
 
 /**
@@ -108,13 +110,14 @@ export const undoPassApi = async () => {
  * Function: useRecommendations
  * Executes the core operations and logic for use recommendations.
  */
-export function useRecommendations(filters?: FeedFilterParams) {
+export function useRecommendations(filters?: FeedFilterParams, options?: { enabled?: boolean }) {
   return useInfiniteQuery({
     queryKey: feedKeys.recommendations(filters),
     queryFn: ({ pageParam = 1 }) => getRecommendationsApi(pageParam, filters),
     initialPageParam: 1,
     getNextPageParam: (lastPage) => lastPage.nextPage,
     staleTime: 5 * 60 * 1000,
+    enabled: options?.enabled ?? true,
   });
 }
 

@@ -10,8 +10,25 @@ import { Recommendation, FeedFilterParams } from "@/features/feed/feed.api";
 import { PartnerFilterPanel } from "@/features/feed/components/PartnerFilterPanel";
 import { api } from "@/lib/axios";
 
+import { useMyProfile, profileKeys } from "@/features/profile/profile.queries";
+import { useQueryClient } from "@tanstack/react-query";
+
 interface ExploreFeedProps {
   onProfileClick: (profile: Recommendation) => void;
+}
+
+const FEED_FILTERS_STORAGE_KEY = "nira_feed_filters";
+
+function getSavedFeedFilters(): FeedFilterParams {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(FEED_FILTERS_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch (err) {
+    return {};
+  }
 }
 
 const HorizontalScrollContainer = ({ children }: { children: React.ReactNode }) => (
@@ -105,13 +122,44 @@ const ProfileCardSmall = React.memo(({ profile, type, onClick, isPremium }: { pr
 ProfileCardSmall.displayName = 'ProfileCardSmall';
 
 export function ExploreFeed({ onProfileClick }: ExploreFeedProps) {
+  const queryClient = useQueryClient();
   const { data: session } = useSession();
+  const { data: myProfile } = useMyProfile();
   const isPremium = session?.user?.subscription?.plan === 'premium';
   
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [filters, setFilters] = useState<FeedFilterParams>({});
+  const [filters, setFilters] = useState<FeedFilterParams>(getSavedFeedFilters);
+  const [hasInitializedFilters, setHasInitializedFilters] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+
+  // Immediately hydrate filters from localStorage on client mount BEFORE queries run
+  React.useEffect(() => {
+    const local = getSavedFeedFilters();
+    if (Object.keys(local).length > 0) {
+      setFilters(local);
+    }
+    setIsHydrated(true);
+  }, []);
+
+  // Sync saved preferences from MongoDB on page load/refresh if localStorage was empty
+  React.useEffect(() => {
+    if (myProfile?.preferences && !hasInitializedFilters) {
+      const p = myProfile.preferences as any;
+      const mongoSaved = p.savedFilters || {};
+      const localFilters = getSavedFeedFilters();
+      const hasLocalFilters = Object.keys(localFilters).length > 0;
+
+      if (!hasLocalFilters && Object.keys(mongoSaved).length > 0) {
+        setFilters(mongoSaved);
+        try {
+          localStorage.setItem(FEED_FILTERS_STORAGE_KEY, JSON.stringify(mongoSaved));
+        } catch (_) {}
+      }
+      setHasInitializedFilters(true);
+    }
+  }, [myProfile, hasInitializedFilters]);
 
   // Debounce search query
   React.useEffect(() => {
@@ -124,17 +172,45 @@ export function ExploreFeed({ onProfileClick }: ExploreFeedProps) {
     };
   }, [searchQuery]);
 
-  const { data, isLoading } = useExploreData({
-    q: debouncedQuery || undefined,
-    ...filters
-  });
+  const { data, isLoading } = useExploreData(
+    {
+      q: debouncedQuery || undefined,
+      ...filters
+    },
+    { enabled: isHydrated }
+  );
 
   const handleApplyFilters = async (newFilters: FeedFilterParams) => {
     setFilters(newFilters);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(FEED_FILTERS_STORAGE_KEY, JSON.stringify(newFilters));
+      } catch (e) {
+        console.warn("Failed to save filters to localStorage", e);
+      }
+    }
+
     try {
-      await api.put("/profile/me", { preferences: newFilters });
+      await api.put("/profile/me", { preferences: { ...newFilters, savedFilters: newFilters } });
+      queryClient.invalidateQueries({ queryKey: profileKeys.me });
     } catch (e) {
       console.error("Failed to auto-save preferences", e);
+    }
+  };
+
+  const handleClearAllFilters = async () => {
+    setFilters({});
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem(FEED_FILTERS_STORAGE_KEY);
+      } catch (_) {}
+    }
+
+    try {
+      await api.put("/profile/me", { preferences: { savedFilters: {} } });
+      queryClient.invalidateQueries({ queryKey: profileKeys.me });
+    } catch (e) {
+      console.error("Failed to clear saved filters from MongoDB", e);
     }
   };
 
@@ -272,6 +348,7 @@ export function ExploreFeed({ onProfileClick }: ExploreFeedProps) {
           <PartnerFilterPanel
             initialFilters={filters}
             onApply={handleApplyFilters}
+            onClearAll={handleClearAllFilters}
           />
         </div>
 
@@ -294,6 +371,7 @@ export function ExploreFeed({ onProfileClick }: ExploreFeedProps) {
             <PartnerFilterPanel 
               initialFilters={filters} 
               onApply={handleApplyFilters} 
+              onClearAll={handleClearAllFilters}
               onClose={() => setIsMobileFilterOpen(false)} 
               isMobile={true} 
             />

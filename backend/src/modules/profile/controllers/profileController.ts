@@ -192,7 +192,27 @@ export const updateMyProfile = asyncHandler(async (req: Request, res: Response, 
     }
 
     if (preferences) {
-      await Preference.findOneAndUpdate({ userId }, preferences, { returnDocument: 'after', upsert: true });
+      const mappedPref: Record<string, any> = { ...preferences };
+      if (preferences.minAge !== undefined) mappedPref.prefAgeMin = preferences.minAge;
+      if (preferences.maxAge !== undefined) mappedPref.prefAgeMax = preferences.maxAge;
+      if (preferences.location !== undefined) mappedPref.prefLocation = preferences.location;
+      if (preferences.religion !== undefined) mappedPref.prefReligion = preferences.religion;
+      if (preferences.caste !== undefined) mappedPref.prefCaste = preferences.caste;
+      if (preferences.diet !== undefined) mappedPref.prefDiet = preferences.diet;
+      if (preferences.smoking !== undefined) mappedPref.prefSmoking = preferences.smoking;
+      if (preferences.drinking !== undefined) mappedPref.prefDrinking = preferences.drinking;
+      if (preferences.education !== undefined) mappedPref.prefEducation = preferences.education;
+      if (preferences.profession !== undefined) mappedPref.prefProfession = preferences.profession;
+      if (preferences.maritalStatus !== undefined) mappedPref.prefMaritalStatus = Array.isArray(preferences.maritalStatus) ? preferences.maritalStatus : [preferences.maritalStatus];
+      if (preferences.nationality !== undefined) mappedPref.prefNationality = preferences.nationality;
+      if (preferences.children !== undefined) mappedPref.prefChildren = preferences.children;
+      if (preferences.language !== undefined) mappedPref.prefLanguage = preferences.language;
+      if (preferences.height !== undefined) mappedPref.prefHeightMin = preferences.height;
+      if (preferences.marriagePlans !== undefined) mappedPref.prefMarriagePlans = preferences.marriagePlans;
+      if (preferences.relocationPlans !== undefined) mappedPref.prefRelocationPlans = preferences.relocationPlans;
+      mappedPref.savedFilters = preferences.savedFilters || preferences;
+
+      await Preference.findOneAndUpdate({ userId }, { $set: { ...mappedPref, userId } }, { returnDocument: 'after', upsert: true });
     }
 
     res.status(200).json({ message: "Profile updated successfully" });

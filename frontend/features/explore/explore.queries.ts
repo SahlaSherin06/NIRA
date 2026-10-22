@@ -6,11 +6,12 @@ export const exploreKeys = {
   list: (filters: any) => [...exploreKeys.all, filters] as const,
 };
 
-export const useExploreData = (filters?: ExploreParams) => {
+export const useExploreData = (filters?: ExploreParams, options?: { enabled?: boolean }) => {
   return useInfiniteQuery({
     queryKey: exploreKeys.list(filters),
     queryFn: ({ pageParam = 1 }) => fetchExploreData({ ...filters, page: pageParam }),
     initialPageParam: 1,
     getNextPageParam: (lastPage) => lastPage.nextPage,
+    enabled: options?.enabled ?? true,
   });
 };
