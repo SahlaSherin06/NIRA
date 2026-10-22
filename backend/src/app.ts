@@ -16,13 +16,20 @@ import { User } from "./modules/auth/models/User";
 
 const app = express();
 
+// Needed because the backend sits behind a proxy/tunnel (HTTPS) - required for secure cookies
+app.set("trust proxy", 1);
+
+// Allowed frontend origins (no trailing slash)
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "https://nira-sandy.vercel.app",
+  process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/\/$/, "") : "",
+].filter(Boolean);
+
 app.use(
   cors({
-    origin: [
-      "http://localhost:3000", 
-      "http://127.0.0.1:3000",
-      process.env.FRONTEND_URL as string
-    ].filter(Boolean),
+    origin: allowedOrigins,
     credentials: true,
   })
 );
@@ -39,14 +46,10 @@ const PORT = process.env.PORT || 5000;
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: [
-      "http://localhost:3000",
-      "http://127.0.0.1:3000",
-      process.env.FRONTEND_URL as string
-    ].filter(Boolean),
+    origin: allowedOrigins,
     credentials: true,
-    methods: ["GET", "POST"]
-  }
+    methods: ["GET", "POST"],
+  },
 });
 
 // Pass io to request object so all route controllers can emit events
@@ -123,5 +126,3 @@ app.use(errorHandler);
 server.listen(PORT, () => {
   console.log(`NIRA backend (with Socket.IO) running on port ${PORT}`);
 });
-
-
