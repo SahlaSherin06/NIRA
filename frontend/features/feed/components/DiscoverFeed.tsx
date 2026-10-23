@@ -36,6 +36,13 @@ export function DiscoverFeed() {
 
   // Immediately hydrate filters from localStorage on client mount BEFORE queries run
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      if ("scrollRestoration" in window.history) {
+        window.history.scrollRestoration = "manual";
+      }
+      window.scrollTo(0, 0);
+    }
+
     const local = getSavedFeedFilters();
     if (Object.keys(local).length > 0) {
       setFilters(local);
@@ -212,26 +219,32 @@ export function DiscoverFeed() {
   }).length;
 
   return (
-    <div className="w-full max-w-7xl mx-auto pt-2 pb-16 px-2 sm:px-4 overflow-x-hidden">
-      {/* Mobile Top Bar with Filter Trigger */}
-      <div className="lg:hidden flex items-center justify-between mb-4 px-2">
+    <div className="w-full max-w-7xl mx-auto pt-0 pb-16 px-2 sm:px-4 overflow-x-clip">
+      {/* Top Header: Visible on both Desktop & Mobile */}
+      <div className="flex items-center justify-between mb-5 px-1 sm:px-2">
         <div>
-          <h1 className="text-xl font-bold font-serif text-gray-900">Discover</h1>
-          <p className="text-xs text-gray-500">Find your ideal match</p>
+          <h1 className="text-2xl lg:text-3xl font-bold font-serif text-gray-900 tracking-tight">Discover</h1>
+          <p className="text-xs lg:text-sm text-gray-500 mt-0.5">Find your ideal match</p>
         </div>
+        {/* Mobile Filter Button */}
         <button
           onClick={() => setIsMobileFilterOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-white rounded-full border border-gray-200 shadow-sm text-brand-900 font-semibold text-sm hover:bg-brand-50 transition-colors"
+          className="lg:hidden flex items-center gap-2 px-3.5 py-2 bg-white rounded-full border border-gray-200 shadow-sm text-brand-900 font-semibold text-xs hover:bg-brand-50 transition-colors"
         >
-          <SlidersHorizontal className="w-4 h-4 text-brand-900" />
+          <SlidersHorizontal className="w-3.5 h-3.5 text-brand-900" />
           <span>Filters</span>
+          {activeFilterCount > 0 && (
+            <span className="w-4 h-4 rounded-full bg-brand-900 text-white text-[10px] flex items-center justify-center font-bold">
+              {activeFilterCount}
+            </span>
+          )}
         </button>
       </div>
 
       {/* Main Two-Column Layout on Laptop: Filter Panel on LEFT, Feed on RIGHT */}
-      <div className="flex flex-col lg:flex-row gap-8 items-start justify-center w-full max-w-full overflow-hidden">
+      <div className="flex flex-col lg:flex-row gap-8 items-start justify-center w-full max-w-full">
         {/* Left Column: Filter Section on Laptop/Desktop - Sized cleanly to viewport */}
-        <div className="hidden lg:block w-80 xl:w-96 shrink-0 sticky top-24 h-[1320px] overflow-hidden rounded-3xl">
+        <div className="hidden lg:block w-80 xl:w-96 shrink-0 sticky top-24 h-[calc(100vh-7.5rem)] max-h-[860px] rounded-3xl">
           <PartnerFilterPanel
             initialFilters={filters}
             onApply={handleApplyFilters}
@@ -242,7 +255,7 @@ export function DiscoverFeed() {
         {/* Right / Center: Profile Cards Swiper Area */}
         <div className="w-full max-w-xl mx-auto flex flex-col items-center min-h-[80vh] overflow-x-clip">
           {(!isHydrated || isLoading) && queue.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-[70vh]">
+            <div className="flex flex-col items-center justify-center h-[70vh] w-full">
               <div className="w-12 h-12 border-4 border-brand-900 border-t-transparent rounded-full animate-spin mb-4"></div>
               <p className="text-gray-500 font-medium animate-pulse">Finding your perfect match...</p>
             </div>

@@ -460,9 +460,9 @@ export function ExploreFeed({ onProfileClick }: ExploreFeedProps) {
       </div>
 
       {/* Main Two-Column Layout on Laptop: Filter on LEFT, Content on RIGHT */}
-      <div className="flex flex-col lg:flex-row gap-8 items-start w-full max-w-full overflow-hidden">
-        {/* Left Column: Filter Section on Laptop/Desktop - Extending to Just Joined NIRA cards */}
-        <div className="hidden lg:block w-80 xl:w-96 shrink-0 sticky top-24 h-[1320px] overflow-hidden rounded-3xl">
+      <div className="flex flex-col lg:flex-row gap-8 items-start w-full max-w-full">
+        {/* Left Column: Filter Section on Laptop/Desktop - Sized cleanly to viewport */}
+        <div className="hidden lg:block w-80 xl:w-96 shrink-0 sticky top-24 h-[calc(100vh-7.5rem)] max-h-[860px] rounded-3xl">
           <PartnerFilterPanel
             initialFilters={filters}
             onApply={handleApplyFilters}

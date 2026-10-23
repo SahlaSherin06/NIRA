@@ -29,7 +29,7 @@ export function AdminNavbar({ onToggleSidebar }: AdminNavbarProps) {
   const userInitials = userName.charAt(0).toUpperCase();
 
   return (
-    <header className="sticky top-0 z-30 h-16 bg-white/95 backdrop-blur-md border-b border-gray-100 px-4 sm:px-8 flex items-center justify-between">
+    <header className="sticky top-0 z-40 h-16 bg-white/95 backdrop-blur-md border-b border-gray-100 px-4 sm:px-8 flex items-center justify-between shadow-xs">
       {/* Left: Mobile Toggle & Page Title */}
       <div className="flex items-center space-x-3">
         <button
