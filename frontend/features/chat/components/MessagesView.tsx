@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useConversations, useMessages, useSendMessage, useClearChat } from "@/features/chat/chat.queries";
 import { useSession } from "@/features/auth/auth.queries";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Loader2, Trash2, Ban } from "lucide-react";
 import io, { Socket } from "socket.io-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { chatKeys } from "@/features/chat/chat.queries";
+import { Message } from "@/features/chat/chat.api";
 import { useMyProfile } from "@/features/profile/profile.queries";
 import { useInteract, useRemoveAction } from "@/features/feed/feed.api";
 
@@ -17,14 +18,17 @@ import { ChatWindow } from "@/features/chat/components/ChatWindow";
 const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || "http://localhost:5000";
 
 export function MessagesView() {
-  const [activeChat, setActiveChat] = useState<string | null>(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const urlUserId = searchParams.get("user");
+
+  const [activeChat, setActiveChat] = useState<string | null>(urlUserId || null);
   const [messageText, setMessageText] = useState("");
   const [socket, setSocket] = useState<Socket | null>(null);
   const [showMenu, setShowMenu] = useState(false);
   const [confirmAction, setConfirmAction] = useState<"clear" | "block" | null>(null);
   const [filter, setFilter] = useState<"all" | "unread">("all");
 
-  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
 
   const { data: session } = useSession();
@@ -40,26 +44,97 @@ export function MessagesView() {
 
   const activeConvo = conversations?.find((c) => c.otherUser._id === activeChat);
 
+  // Sync activeChat when URL search parameter changes (e.g. browser back/forward or deep link)
   useEffect(() => {
-    const userId = searchParams.get("user");
-    if (userId) setActiveChat(userId);
-  }, [searchParams]);
+    setActiveChat(urlUserId || null);
+  }, [urlUserId]);
+
+  const handleSelectChat = (userId: string | null) => {
+    setActiveChat(userId);
+    if (userId) {
+      router.replace(`/messages?user=${userId}`, { scroll: false });
+    } else {
+      router.replace(`/messages`, { scroll: false });
+    }
+  };
+
+  // Keep latest refs so socket listeners never disconnect on activeChat switch
+  const activeChatRef = useRef(activeChat);
+  useEffect(() => {
+    activeChatRef.current = activeChat;
+  }, [activeChat]);
+
+  const activeConvoRef = useRef(activeConvo);
+  useEffect(() => {
+    activeConvoRef.current = activeConvo;
+  }, [activeConvo]);
 
   useEffect(() => {
-    if (!session?.user?._id && !session?.user?.userId) return;
+    const currentUserId = session?.user?._id || session?.user?.userId;
+    if (!currentUserId) return;
     
-    const newSocket = io(SOCKET_URL);
+    const newSocket = io(SOCKET_URL, {
+      transports: ["websocket", "polling"],
+    });
     setSocket(newSocket);
     
-    newSocket.emit("join", session.user._id || session.user.userId);
+    newSocket.on("connect", () => {
+      newSocket.emit("join", currentUserId);
+    });
     
-    newSocket.on("receiveMessage", (message) => {
-      queryClient.invalidateQueries({ queryKey: chatKeys.conversations() });
-      if (message.conversationId === activeConvo?._id) {
-        queryClient.invalidateQueries({ queryKey: chatKeys.messages(activeChat!) });
+    newSocket.on("receiveMessage", (message: Message & { conversationId?: string }) => {
+      const currentChatId = activeChatRef.current;
+      const isFromActiveUser = currentChatId && (message.senderId === currentChatId);
+
+      if (isFromActiveUser) {
+        // Direct instant cache update: 0ms latency for incoming bubble!
+        queryClient.setQueryData<Message[]>(chatKeys.messages(currentChatId), (old = []) => {
+          if (!old) return [message];
+          if (old.some((m) => m._id === message._id)) return old;
+          return [...old, message];
+        });
+        
         newSocket.emit("markAsRead", { 
-          conversationId: message.conversationId, 
-          userId: session.user._id || session.user.userId 
+          conversationId: message.conversationId || activeConvoRef.current?._id, 
+          userId: currentUserId,
+          targetId: message.senderId,
+        });
+      }
+
+      // Update conversations list in-place directly without full network round-trip
+      let found = false;
+      queryClient.setQueryData<any[]>(chatKeys.conversations(), (old = []) => {
+        if (!old) return old;
+        const updated = old.map((convo) => {
+          if (convo.otherUser._id === message.senderId) {
+            found = true;
+            return {
+              ...convo,
+              lastMessage: {
+                content: message.content,
+                createdAt: message.createdAt,
+              },
+              unreadCount: isFromActiveUser ? 0 : (convo.unreadCount || 0) + 1,
+              updatedAt: message.createdAt,
+            };
+          }
+          return convo;
+        });
+        return updated.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+      });
+
+      if (!found) {
+        queryClient.invalidateQueries({ queryKey: chatKeys.conversations() });
+      }
+    });
+
+    // When recipient reads messages, mark our sent messages as read (blue double ticks)
+    newSocket.on("messagesRead", () => {
+      const currentChatId = activeChatRef.current;
+      if (currentChatId) {
+        queryClient.setQueryData<Message[]>(chatKeys.messages(currentChatId), (old = []) => {
+          if (!old) return old;
+          return old.map((m) => ({ ...m, isRead: true }));
         });
       }
     });
@@ -76,18 +151,21 @@ export function MessagesView() {
     return () => {
       newSocket.disconnect();
     };
-  }, [session, activeChat, activeConvo, queryClient]);
+  }, [session?.user?._id, session?.user?.userId, queryClient]);
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
     if (!messageText.trim() || !activeChat) return;
     
+    const textToSend = messageText.trim();
+    setMessageText(""); // Snappy zero-delay UI clear
+    
     sendMessageMutation.mutate(
-      { targetId: activeChat, content: messageText },
+      { targetId: activeChat, content: textToSend },
       { 
-        onSuccess: () => setMessageText(""),
         onError: (err: any) => {
-          if (err.response?.data?.isSuspended) {
+          setMessageText(textToSend); // Restore user text if network failed
+          if (err?.response?.data?.isSuspended) {
             queryClient.invalidateQueries({ queryKey: chatKeys.conversations() });
           }
         }
@@ -166,13 +244,13 @@ export function MessagesView() {
   const unreadChatsCount = conversations?.filter(c => c.unreadCount && c.unreadCount > 0).length || 0;
 
   return (
-    <div className="flex h-[calc(100vh-64px)] md:h-[calc(100vh-80px)] bg-white overflow-hidden">
-      <div className="flex-1 flex bg-white w-full">
+    <div className="flex h-[calc(100dvh-144px)] md:h-[calc(100vh-140px)] bg-white overflow-hidden w-full rounded-none md:rounded-3xl border-0 md:border md:border-gray-100 shadow-none md:shadow-sm">
+      <div className="flex-1 flex bg-white w-full h-full overflow-hidden">
         
         <ChatSidebar 
           conversations={conversations || []}
           activeChat={activeChat}
-          setActiveChat={setActiveChat}
+          setActiveChat={handleSelectChat}
           filter={filter}
           setFilter={setFilter}
           allCount={allCount}
@@ -181,10 +259,11 @@ export function MessagesView() {
 
         <ChatWindow 
           activeChat={activeChat}
-          setActiveChat={setActiveChat}
+          setActiveChat={handleSelectChat}
           activeConvo={activeConvo}
           messages={messages}
           isMessagesLoading={isMessagesLoading}
+          isConversationsLoading={isConversationsLoading}
           myProfile={myProfile}
           session={session}
           messageText={messageText}

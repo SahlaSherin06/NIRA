@@ -31,21 +31,138 @@ function getSavedFeedFilters(): FeedFilterParams {
   }
 }
 
-const HorizontalScrollContainer = ({ children }: { children: React.ReactNode }) => (
-  <div className="relative group">
-    <div className="flex space-x-6 overflow-x-auto pb-8 pt-2 custom-scrollbar snap-x snap-mandatory">
-      {children}
+const HorizontalScrollContainer = ({ children }: { children: React.ReactNode }) => {
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = React.useState(false);
+  const [canScrollRight, setCanScrollRight] = React.useState(true);
+
+  // Mouse drag support for desktop
+  const isDownRef = React.useRef(false);
+  const startXRef = React.useRef(0);
+  const scrollLeftRef = React.useRef(0);
+  const isDraggingRef = React.useRef(false);
+
+  const checkScroll = React.useCallback(() => {
+    if (scrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+      setCanScrollLeft(scrollLeft > 10);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    checkScroll();
+    const el = scrollRef.current;
+    if (el) {
+      el.addEventListener("scroll", checkScroll, { passive: true });
+    }
+    window.addEventListener("resize", checkScroll);
+    return () => {
+      if (el) el.removeEventListener("scroll", checkScroll);
+      window.removeEventListener("resize", checkScroll);
+    };
+  }, [checkScroll, children]);
+
+  const scroll = (direction: "left" | "right") => {
+    if (scrollRef.current) {
+      const scrollAmount = direction === "left" ? -320 : 320;
+      scrollRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
+    }
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!scrollRef.current) return;
+    isDownRef.current = true;
+    isDraggingRef.current = false;
+    startXRef.current = e.pageX - scrollRef.current.offsetLeft;
+    scrollLeftRef.current = scrollRef.current.scrollLeft;
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDownRef.current || !scrollRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - scrollRef.current.offsetLeft;
+    const walk = (x - startXRef.current) * 1.5;
+    if (Math.abs(walk) > 5) {
+      isDraggingRef.current = true;
+    }
+    scrollRef.current.scrollLeft = scrollLeftRef.current - walk;
+  };
+
+  const handleMouseUpOrLeave = () => {
+    isDownRef.current = false;
+  };
+
+  return (
+    <div className="relative group w-full max-w-full overflow-hidden">
+      {canScrollLeft && (
+        <button
+          onClick={() => scroll("left")}
+          className="hidden md:flex absolute left-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/95 shadow-md items-center justify-center text-gray-700 hover:text-brand-900 hover:bg-white hover:scale-105 transition-all border border-gray-100"
+          aria-label="Scroll left"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+      )}
+      <div
+        ref={scrollRef}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUpOrLeave}
+        onMouseLeave={handleMouseUpOrLeave}
+        style={{ WebkitOverflowScrolling: "touch" }}
+        className="flex space-x-4 sm:space-x-6 overflow-x-auto pb-4 pt-2 no-scrollbar md:custom-scrollbar w-full max-w-full overscroll-x-contain select-none cursor-grab active:cursor-grabbing"
+      >
+        {children}
+      </div>
+      {canScrollRight && (
+        <button
+          onClick={() => scroll("right")}
+          className="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/95 shadow-md items-center justify-center text-gray-700 hover:text-brand-900 hover:bg-white hover:scale-105 transition-all border border-gray-100"
+          aria-label="Scroll right"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      )}
     </div>
-  </div>
-);
+  );
+};
 
 const ProfileCardSmall = React.memo(({ profile, type, onClick, isPremium }: { profile: Recommendation, type: 'complete' | 'new', onClick: () => void, isPremium: boolean }) => {
   const router = useRouter();
   const isBlurred = profile.profile?.photoPrivacy === "Blurred" && !isPremium;
+  const touchStartPos = React.useRef({ x: 0, y: 0 });
+  const isDragging = React.useRef(false);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartPos.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+    };
+    isDragging.current = false;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    const dx = Math.abs(e.touches[0].clientX - touchStartPos.current.x);
+    const dy = Math.abs(e.touches[0].clientY - touchStartPos.current.y);
+    if (dx > 8 || dy > 8) {
+      isDragging.current = true;
+    }
+  };
+
+  const handleClick = () => {
+    if (isDragging.current) {
+      return;
+    }
+    onClick();
+  };
+
   return (
     <div 
-      onClick={onClick}
-      className="flex-shrink-0 w-72 md:w-80 bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 snap-center border border-gray-50 group cursor-pointer relative"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onClick={handleClick}
+      className="flex-shrink-0 w-64 sm:w-72 md:w-80 bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-gray-50 group cursor-pointer relative select-none"
     >
       
       {/* Top badges */}
@@ -67,7 +184,8 @@ const ProfileCardSmall = React.memo(({ profile, type, onClick, isPremium }: { pr
         <img 
           src={profile.profile.mainPhoto} 
           alt={profile.name} 
-          className={`w-full h-full object-cover transition-transform duration-700 ease-out ${isBlurred ? 'blur-2xl scale-110 grayscale-[30%]' : 'group-hover:scale-105'}`}
+          draggable={false}
+          className={`w-full h-full object-cover transition-transform duration-700 ease-out pointer-events-none select-none ${isBlurred ? 'blur-2xl scale-110 grayscale-[30%]' : 'group-hover:scale-105'}`}
         />
         {isBlurred && (
           <div onClick={(e) => { e.stopPropagation(); router.push('/premium'); }} className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 z-10 cursor-pointer hover:bg-black/40 transition-colors">
@@ -309,7 +427,7 @@ export function ExploreFeed({ onProfileClick }: ExploreFeedProps) {
   };
 
   return (
-    <div className="flex-1 w-full relative">
+    <div className="flex-1 w-full max-w-full overflow-hidden relative">
       {/* Top Search Bar & Mobile Filter Trigger */}
       <div className="mb-8 flex items-center gap-3">
         <div className="flex-1 bg-white p-2.5 md:p-3 rounded-2xl shadow-sm border border-gray-100 flex items-center relative">
@@ -342,7 +460,7 @@ export function ExploreFeed({ onProfileClick }: ExploreFeedProps) {
       </div>
 
       {/* Main Two-Column Layout on Laptop: Filter on LEFT, Content on RIGHT */}
-      <div className="flex flex-col lg:flex-row gap-8 items-start">
+      <div className="flex flex-col lg:flex-row gap-8 items-start w-full max-w-full overflow-hidden">
         {/* Left Column: Filter Section on Laptop/Desktop - Extending to Just Joined NIRA cards */}
         <div className="hidden lg:block w-80 xl:w-96 shrink-0 sticky top-24 h-[1320px] overflow-hidden rounded-3xl">
           <PartnerFilterPanel
@@ -353,7 +471,7 @@ export function ExploreFeed({ onProfileClick }: ExploreFeedProps) {
         </div>
 
         {/* Right: Explore Feed Content */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 w-full max-w-full overflow-hidden">
           {renderContent()}
         </div>
       </div>

@@ -39,40 +39,40 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-cream text-dark font-sans selection:bg-brand-100 selection:text-brand-900">
+    <div className="min-h-screen bg-cream text-dark font-sans selection:bg-brand-100 selection:text-brand-900 overflow-x-hidden w-full max-w-full">
       <LandingNavbar />
 
       <div className="pt-20">
         
         {/* ===== HERO SECTION ===== */}
-        <section id="hero" className="px-8 pt-6 lg:pt-10 pb-24 max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-start">
+        <section id="hero" className="px-4 sm:px-6 lg:px-8 pt-6 lg:pt-10 pb-20 lg:pb-24 max-w-7xl mx-auto grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
           <div className="space-y-8 lg:mt-12">
             <div data-reveal="up" className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-brand-50 border border-brand-100 text-brand-900 text-sm font-medium">
               <Sparkles className="w-4 h-4" />
               <span>Intentionally designed for meaningful matrimony</span>
             </div>
             
-            <h1 data-reveal="up" className="text-5xl md:text-6xl font-serif text-brand-900 leading-[1.1]">
+            <h1 data-reveal="up" className="text-4xl sm:text-5xl md:text-6xl font-serif text-brand-900 leading-[1.1]">
               Meet Someone Who <br/>
               <span className="italic text-brand-800 font-light">Shares Your Future</span>
             </h1>
             
-            <p data-reveal="up" className="text-lg text-gray-600 max-w-md leading-relaxed">
+            <p data-reveal="up" className="text-base sm:text-lg text-gray-600 max-w-md leading-relaxed">
               A modern, purpose-driven matrimony platform designed to connect you with 
               individuals seeking authentic, serious, and lasting relationships based on shared values.
             </p>
 
-            <div data-reveal="fade" className="flex items-center space-x-4 pt-4">
+            <div data-reveal="fade" className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 pt-4 w-full max-w-md">
               {session ? (
-                <Link href="/home" className="px-8 py-3.5 rounded-full bg-brand-900 text-white font-medium hover:bg-brand-800 transition shadow-lg shadow-brand-900/20 hover:-translate-y-1 transform">
+                <Link href="/home" className="px-6 sm:px-8 py-3.5 rounded-full bg-brand-900 text-white font-medium hover:bg-brand-800 transition shadow-lg shadow-brand-900/20 hover:-translate-y-1 transform text-center">
                   Go to Dashboard
                 </Link>
               ) : (
-                <Link href="/register" className="px-8 py-3.5 rounded-full bg-brand-900 text-white font-medium hover:bg-brand-800 transition shadow-lg shadow-brand-900/20 hover:-translate-y-1 transform">
+                <Link href="/register" className="px-6 sm:px-8 py-3.5 rounded-full bg-brand-900 text-white font-medium hover:bg-brand-800 transition shadow-lg shadow-brand-900/20 hover:-translate-y-1 transform text-center">
                   Create Profile
                 </Link>
               )}
-              <a href="#how-it-works" onClick={(e) => scrollTo(e, 'how-it-works')} className="px-8 py-3.5 rounded-full bg-white border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition">
+              <a href="#how-it-works" onClick={(e) => scrollTo(e, 'how-it-works')} className="px-6 sm:px-8 py-3.5 rounded-full bg-white border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition text-center">
                 How NIRA Works
               </a>
             </div>
@@ -117,8 +117,8 @@ export default function LandingPage() {
         </section>
 
         {/* ===== HOW NIRA WORKS (SWAPPED TO BE BEFORE PRIVACY) ===== */}
-        <section id="how-it-works" className="py-24 bg-brand-50/50 scroll-mt-20">
-          <div className="max-w-7xl mx-auto px-8 text-center">
+        <section id="how-it-works" className="py-20 lg:py-24 bg-brand-50/50 scroll-mt-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 data-reveal="up" className="text-sm font-bold tracking-widest uppercase text-brand-900 mb-2">How It Works</h2>
             <h3 data-reveal="up" className="text-3xl md:text-4xl font-serif text-gray-900 mb-16">Four simple steps to your lifelong partnership</h3>
             
@@ -144,8 +144,8 @@ export default function LandingPage() {
         </section>
 
         {/* ===== TRUST / PRIVACY SECTION (SWAPPED TO BE AFTER HOW IT WORKS) ===== */}
-        <section id="privacy-safety" className="bg-white py-24 border-y border-gray-100 scroll-mt-20">
-          <div className="max-w-7xl mx-auto px-8">
+        <section id="privacy-safety" className="bg-white py-20 lg:py-24 border-y border-gray-100 scroll-mt-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-2xl mx-auto mb-16">
               <h2 data-reveal="up" className="text-sm font-bold tracking-widest uppercase text-brand-900 mb-2">Privacy & Safety</h2>
               <h3 data-reveal="up" className="text-3xl md:text-4xl font-serif text-gray-900">A secure environment built on trust and respect</h3>
@@ -170,8 +170,8 @@ export default function LandingPage() {
         </section>
 
         {/* ===== WHY NIRA IS UNIQUE ===== */}
-        <section id="why-nira" className="py-24 bg-white scroll-mt-20">
-          <div className="max-w-7xl mx-auto px-8">
+        <section id="why-nira" className="py-20 lg:py-24 bg-white scroll-mt-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
               <h2 data-reveal="up" className="text-sm font-bold tracking-widest uppercase text-brand-900 mb-2">The NIRA Difference</h2>
               <h3 data-reveal="up" className="text-3xl md:text-4xl font-serif text-gray-900">Why choose NIRA for your search</h3>
@@ -200,8 +200,8 @@ export default function LandingPage() {
         </section>
 
         {/* ===== TESTIMONIALS ===== */}
-        <section id="success-stories" className="py-24 bg-brand-50/30 border-y border-brand-50 scroll-mt-20">
-          <div className="max-w-7xl mx-auto px-8">
+        <section id="success-stories" className="py-20 lg:py-24 bg-brand-50/30 border-y border-brand-50 scroll-mt-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
               <h2 data-reveal="up" className="text-sm font-bold tracking-widest uppercase text-brand-900 mb-2">Success Stories</h2>
               <h3 data-reveal="up" className="text-3xl md:text-4xl font-serif text-gray-900">Hear from couples who found love through NIRA</h3>
@@ -245,8 +245,8 @@ export default function LandingPage() {
         </section>
 
         {/* ===== BOTTOM CTA ===== */}
-        <section className="bg-brand-900 py-24 text-center">
-          <div className="max-w-3xl mx-auto px-8">
+        <section className="bg-brand-900 py-20 lg:py-24 text-center">
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
             <Heart data-reveal="scale" className="w-12 h-12 text-brand-100 mx-auto mb-6 fill-brand-100" />
             <h2 data-reveal="up" className="text-4xl md:text-5xl font-serif text-white mb-6">Your story could start here.</h2>
             <p data-reveal="up" className="text-brand-100 text-lg mb-10 max-w-xl mx-auto opacity-90">

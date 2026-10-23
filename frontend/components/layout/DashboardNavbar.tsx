@@ -105,10 +105,10 @@ export function DashboardNavbar() {
             {/* Back to Landing Page / Website */}
             <Link 
               href="/" 
-              className="hidden md:flex items-center p-2 lg:px-4 lg:py-2 text-sm font-semibold text-gray-600 hover:text-brand-900 bg-white hover:bg-brand-50 rounded-full transition-colors border border-gray-200 shadow-sm"
+              className="flex items-center p-2.5 lg:px-4 lg:py-2 text-sm font-semibold text-gray-600 hover:text-brand-900 bg-white hover:bg-brand-50 rounded-full transition-colors border border-gray-200 shadow-sm"
               title="Website"
             >
-              <Globe className="w-4 h-4 lg:mr-2 text-gray-400" />
+              <Globe className="w-5 h-5 lg:w-4 lg:h-4 lg:mr-2 text-gray-500" />
               <span className="hidden lg:inline">Website</span>
             </Link>
 

@@ -13,6 +13,7 @@ import profileRoutes from "./modules/profile/routes/profileRoutes";
 import feedRoutes from "./modules/feed/routes/feedRoutes";
 import chatRoutes from "./modules/chat/routes/chatRoutes";
 import { User } from "./modules/auth/models/User";
+import { Message } from "./modules/chat/models/Message";
 
 const app = express();
 
@@ -91,10 +92,25 @@ io.on("connection", (socket) => {
           socket.emit("error", { message: "Recipient account has been suspended." });
           return;
         }
-        io.to(data.receiverId.toString()).emit("newMessage", data.message);
+        io.to(data.receiverId.toString()).emit("receiveMessage", data.message);
       }
     } catch (err) {
       console.error("Socket sendMessage error:", err);
+    }
+  });
+
+  socket.on("markAsRead", async (data) => {
+    // data should have { conversationId, userId, targetId }
+    try {
+      if (data?.conversationId && data?.targetId) {
+        await Message.updateMany(
+          { conversationId: data.conversationId, senderId: data.targetId, isRead: false },
+          { $set: { isRead: true } }
+        );
+        io.to(data.targetId.toString()).emit("messagesRead", { conversationId: data.conversationId });
+      }
+    } catch (err) {
+      console.error("Socket markAsRead error:", err);
     }
   });
 

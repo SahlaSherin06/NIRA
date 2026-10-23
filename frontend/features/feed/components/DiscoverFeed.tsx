@@ -79,7 +79,6 @@ export function DiscoverFeed() {
   // Tracking if a card is animating out
   const [animatingOut, setAnimatingOut] = useState<"like" | "superlike" | "pass" | "block" | "report" | null>(null);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
-  const [isEntering, setIsEntering] = useState(false);
 
   // Bottom scroll detection hooks (must be called unconditionally)
   const bottomRef = React.useRef<HTMLDivElement>(null);
@@ -135,9 +134,25 @@ export function DiscoverFeed() {
     }
   }, [data, loadedPages]);
 
-  // Trigger fetchNextPage when queue gets low
+  // Preload upcoming profiles' photos into browser cache so they appear with 0ms visual delay
   useEffect(() => {
-    if (queue.length <= 3 && hasNextPage && !isFetchingNextPage) {
+    if (queue.length > 1) {
+      queue.slice(1, 4).forEach((item) => {
+        if (item.profile?.mainPhoto) {
+          const img = new Image();
+          img.src = item.profile.mainPhoto;
+        }
+        if (item.profile?.galleryPhotos && item.profile.galleryPhotos.length > 0) {
+          const gImg = new Image();
+          gImg.src = item.profile.galleryPhotos[0];
+        }
+      });
+    }
+  }, [queue]);
+
+  // Trigger fetchNextPage ahead of time when queue drops below 5
+  useEffect(() => {
+    if (queue.length <= 5 && hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
     }
   }, [queue.length, hasNextPage, isFetchingNextPage, fetchNextPage]);
@@ -156,7 +171,8 @@ export function DiscoverFeed() {
   }, [currentProfile]); // re-run if profile changes
 
   const handleInteract = React.useCallback(async (action: "like" | "superlike" | "pass" | "block" | "report", reason?: string) => {
-    if (animatingOut || interactMutation.isPending) return;
+    // Only debounce if a swipe animation is actively running
+    if (animatingOut) return;
 
     if (action === "superlike" && !isPremium) {
       setShowPremiumModal(true);
@@ -165,29 +181,30 @@ export function DiscoverFeed() {
 
     if (!currentProfile) return;
 
+    const profileToInteract = currentProfile;
     setAnimatingOut(action);
 
+    // 1. Fire interaction to server in the background (optimistic)
     interactMutation.mutate(
-      { targetId: currentProfile._id, action, reason },
+      { targetId: profileToInteract._id, action, reason },
       {
-        onSuccess: () => {
-          setTimeout(() => {
-            setQueue((prev) => prev.slice(1));
-            setAnimatingOut(null);
-            setIsEntering(true);
-            setTimeout(() => setIsEntering(false), 50);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }, 300);
-        },
         onError: (err: any) => {
-          setAnimatingOut(null);
-          if (err.response?.status === 403) {
+          if (err?.response?.status === 403) {
             setShowPremiumModal(true);
+            // Re-insert profile if blocked by daily limits
+            setQueue((prev) => [profileToInteract, ...prev]);
           }
         }
       }
     );
-  }, [animatingOut, interactMutation, currentProfile, isEntering, isPremium]);
+
+    // 2. Snappy 200ms swipe: immediately advance to next profile without waiting for network!
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: "instant" });
+      setQueue((prev) => prev.slice(1));
+      setAnimatingOut(null);
+    }, 200);
+  }, [animatingOut, currentProfile, isPremium, interactMutation]);
 
   const activeFilterCount = Object.keys(filters).filter(k => {
     const v = (filters as any)[k];
@@ -195,7 +212,7 @@ export function DiscoverFeed() {
   }).length;
 
   return (
-    <div className="w-full max-w-7xl mx-auto pt-2 pb-16 px-2 sm:px-4">
+    <div className="w-full max-w-7xl mx-auto pt-2 pb-16 px-2 sm:px-4 overflow-x-hidden">
       {/* Mobile Top Bar with Filter Trigger */}
       <div className="lg:hidden flex items-center justify-between mb-4 px-2">
         <div>
@@ -212,9 +229,9 @@ export function DiscoverFeed() {
       </div>
 
       {/* Main Two-Column Layout on Laptop: Filter Panel on LEFT, Feed on RIGHT */}
-      <div className="flex flex-col lg:flex-row gap-8 items-start justify-center">
+      <div className="flex flex-col lg:flex-row gap-8 items-start justify-center w-full max-w-full overflow-hidden">
         {/* Left Column: Filter Section on Laptop/Desktop - Sized cleanly to viewport */}
-        <div className="hidden lg:block w-80 xl:w-96 shrink-0 sticky top-24 h-[calc(100vh-7.5rem)] max-h-[820px] overflow-hidden rounded-3xl">
+        <div className="hidden lg:block w-80 xl:w-96 shrink-0 sticky top-24 h-[1320px] overflow-hidden rounded-3xl">
           <PartnerFilterPanel
             initialFilters={filters}
             onApply={handleApplyFilters}
@@ -223,7 +240,7 @@ export function DiscoverFeed() {
         </div>
 
         {/* Right / Center: Profile Cards Swiper Area */}
-        <div className="w-full max-w-xl mx-auto flex flex-col items-center min-h-[80vh]">
+        <div className="w-full max-w-xl mx-auto flex flex-col items-center min-h-[80vh] overflow-x-clip">
           {(!isHydrated || isLoading) && queue.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-[70vh]">
               <div className="w-12 h-12 border-4 border-brand-900 border-t-transparent rounded-full animate-spin mb-4"></div>
@@ -242,12 +259,12 @@ export function DiscoverFeed() {
               <p className="text-gray-500 max-w-sm">We've shown you all the available profiles matching your filters. Try adjusting your preferences on the left.</p>
             </div>
           ) : (
-            <div className="w-full relative">
+            <div className="w-full relative overflow-x-clip">
               <div 
-                className={`w-full transition-all duration-500 ease-out origin-bottom animate-slide-up-fade
-                  ${isEntering ? 'opacity-0' : 'opacity-100'}
-                  ${animatingOut === 'like' ? 'translate-x-[120%] rotate-12 opacity-0 scale-95' : ''}
-                  ${(animatingOut === 'pass' || animatingOut === 'block' || animatingOut === 'report') ? '-translate-x-[120%] -rotate-12 opacity-0 scale-95' : ''}
+                className={`w-full transition-all duration-200 ease-out origin-bottom
+                  ${animatingOut === 'like' ? 'translate-x-[110%] rotate-6 opacity-0 scale-95 pointer-events-none' : ''}
+                  ${animatingOut === 'superlike' ? '-translate-y-[110%] opacity-0 scale-95 pointer-events-none' : ''}
+                  ${(animatingOut === 'pass' || animatingOut === 'block' || animatingOut === 'report') ? '-translate-x-[110%] -rotate-6 opacity-0 scale-95 pointer-events-none' : ''}
                 `}
               >
                 <ProfileCard user={currentProfile} onAction={(action, reason) => handleInteract(action, reason)} />
@@ -263,7 +280,7 @@ export function DiscoverFeed() {
                 className={
                   isAtBottom 
                     ? "absolute bottom-20 md:bottom-6 left-0 w-full flex justify-center space-x-3 md:space-x-6 z-40" 
-                    : "fixed bottom-[calc(5rem+env(safe-area-inset-bottom,0px))] md:bottom-10 left-1/2 -translate-x-1/2 lg:left-[calc(50%+12rem)] w-full max-w-xl flex justify-center space-x-3 md:space-x-6 z-40"
+                    : "fixed bottom-[calc(5rem+env(safe-area-inset-bottom,0px))] md:bottom-10 left-1/2 -translate-x-1/2 lg:left-[calc(50%+12rem)] w-[calc(100%-2rem)] max-w-xl flex justify-center space-x-3 md:space-x-6 z-40"
                 }
               />
             </div>

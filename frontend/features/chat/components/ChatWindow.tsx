@@ -8,6 +8,7 @@ interface ChatWindowProps {
   activeConvo: any;
   messages: Message[] | undefined;
   isMessagesLoading: boolean;
+  isConversationsLoading?: boolean;
   myProfile: any;
   session: any;
   messageText: string;
@@ -31,6 +32,7 @@ export function ChatWindow({
   activeConvo,
   messages,
   isMessagesLoading,
+  isConversationsLoading,
   myProfile,
   session,
   messageText,
@@ -72,44 +74,59 @@ export function ChatWindow({
   }
 
   return (
-    <div className={`flex-1 bg-[#FFF9FA] flex flex-col ${!activeChat ? 'hidden md:flex' : 'flex'}`}>
+    <div
+      className={`bg-[#FFF9FA] flex flex-col h-full ${
+        activeChat
+          ? "fixed inset-0 z-[60] bg-[#FFF9FA] flex flex-col h-[100dvh] w-full md:relative md:inset-auto md:z-auto md:flex-1 md:h-full"
+          : "hidden md:flex md:flex-1 md:h-full"
+      }`}
+    >
       {/* Chat Header */}
-      <div className="px-6 py-4 bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center justify-between z-20">
-        <div className="flex items-center">
+      <div className="px-4 py-3 sm:px-6 sm:py-4 bg-white border-b border-gray-100 flex items-center justify-between z-20 shrink-0 shadow-xs">
+        <div className="flex items-center min-w-0">
           <button 
             onClick={() => setActiveChat(null)}
-            className="md:hidden mr-3 p-2 -ml-2 rounded-full hover:bg-gray-100 text-gray-600"
+            className="md:hidden mr-2.5 p-2 -ml-2 rounded-full hover:bg-gray-100 text-gray-700 active:scale-95 transition-transform"
+            aria-label="Back to conversations"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-5 h-5 text-brand-900" />
           </button>
-          <div className="relative">
-            <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200">
-              {activeConvo?.otherUser.mainPhoto ? (
-                <img src={activeConvo.otherUser.mainPhoto} alt={activeConvo.otherUser.name} className="w-full h-full object-cover" />
+          <div className="relative shrink-0">
+            <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 border border-gray-100">
+              {activeConvo?.otherUser?.mainPhoto ? (
+                <img src={activeConvo.otherUser.mainPhoto} alt={activeConvo?.otherUser?.name || "avatar"} className="w-full h-full object-cover" />
               ) : (
                 <User className="w-5 h-5 m-auto mt-2.5 text-gray-400" />
               )}
             </div>
-            {activeConvo?.otherUser.isOnline && (
+            {activeConvo?.otherUser?.isOnline && (
               <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></span>
             )}
           </div>
-          <div className="ml-3">
-            <div className="flex items-center">
-              <h3 className="text-[15px] font-bold text-gray-900">
-                {activeConvo?.otherUser.name}
-              </h3>
-            </div>
-            <p className="text-xs font-medium text-green-500">
-              {activeConvo?.otherUser.isOnline ? 'Active now' : ''}
-            </p>
+          <div className="ml-3 truncate">
+            {isConversationsLoading && !activeConvo ? (
+              <div className="space-y-1 py-1">
+                <div className="w-24 h-3.5 bg-gray-200 animate-pulse rounded"></div>
+                <div className="w-14 h-2.5 bg-gray-100 animate-pulse rounded"></div>
+              </div>
+            ) : (
+              <>
+                <h3 className="text-sm sm:text-[15px] font-bold text-gray-900 truncate">
+                  {activeConvo?.otherUser?.name || "Conversation"}
+                </h3>
+                <p className="text-xs font-medium text-green-600">
+                  {activeConvo?.otherUser?.isOnline ? 'Active now' : ''}
+                </p>
+              </>
+            )}
           </div>
         </div>
         
-        <div className="flex items-center space-x-2 relative">
+        <div className="flex items-center space-x-2 relative shrink-0">
           <button 
             onClick={() => setShowMenu(!showMenu)}
             className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 text-gray-600 transition-colors focus:outline-none"
+            aria-label="Chat options"
           >
             <MoreVertical className="w-4 h-4" />
           </button>
@@ -136,12 +153,12 @@ export function ChatWindow({
       </div>
 
       {/* Messages Timeline */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-6 flex flex-col space-y-6 custom-scrollbar relative z-10">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-3.5 sm:p-6 flex flex-col space-y-4 sm:space-y-6 custom-scrollbar relative z-10">
         
         {/* System Match Message */}
         <div className="flex justify-center mt-2 mb-4">
-          <div className="bg-[#EBD8DB] text-[#82444D] px-6 py-3 rounded-xl text-[12px] font-medium text-center max-w-sm">
-            You and {activeConvo?.otherUser.name} matched recently. Start the conversation!
+          <div className="bg-[#EBD8DB] text-[#82444D] px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl text-[11px] sm:text-[12px] font-medium text-center max-w-sm">
+            You and {activeConvo?.otherUser?.name || "your match"} matched recently. Start the conversation!
           </div>
         </div>
 
@@ -154,13 +171,13 @@ export function ChatWindow({
             const isMine = msg.senderId === session?.user?._id || msg.senderId === session?.user?.userId;
             return (
               <div key={msg._id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
-                <div className="flex flex-col max-w-[70%]">
+                <div className="flex flex-col max-w-[85%] sm:max-w-[70%]">
                   <div className="flex items-end space-x-2">
                     
                     {/* Their Avatar on Left */}
                     {!isMine && (
                       <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-200 flex-shrink-0 mb-1">
-                        {activeConvo?.otherUser.mainPhoto ? (
+                        {activeConvo?.otherUser?.mainPhoto ? (
                           <img src={activeConvo.otherUser.mainPhoto} alt="avatar" className="w-full h-full object-cover" />
                         ) : (
                           <User className="w-3 h-3 m-auto text-gray-400 mt-1.5" />
@@ -168,8 +185,8 @@ export function ChatWindow({
                       </div>
                     )}
                     
-                    <div className={`px-5 py-3.5 shadow-[0_2px_8px_rgba(0,0,0,0.03)] ${isMine ? 'bg-[#82444D] text-white rounded-2xl rounded-br-sm' : 'bg-white border border-gray-100 text-gray-800 rounded-2xl rounded-bl-sm'}`}>
-                      <p className="text-[14.5px] leading-relaxed">{msg.content}</p>
+                    <div className={`px-4 sm:px-5 py-3 sm:py-3.5 shadow-[0_2px_8px_rgba(0,0,0,0.03)] ${isMine ? 'bg-[#82444D] text-white rounded-2xl rounded-br-sm' : 'bg-white border border-gray-100 text-gray-800 rounded-2xl rounded-bl-sm'}`}>
+                      <p className="text-[13.5px] sm:text-[14.5px] leading-relaxed break-words">{msg.content}</p>
                     </div>
                     
                     {/* My Avatar on Right */}
@@ -184,7 +201,7 @@ export function ChatWindow({
                     )}
                   </div>
                   
-                  <div className={`text-[10px] mt-1.5 font-medium text-gray-400 flex items-center ${isMine ? 'justify-end pr-9' : 'justify-start pl-9'}`}>
+                  <div className={`text-[10px] mt-1 font-medium text-gray-400 flex items-center ${isMine ? 'justify-end pr-8 sm:pr-9' : 'justify-start pl-8 sm:pl-9'}`}>
                     <span>{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     {isMine && (
                       <CheckCheck className={`w-3.5 h-3.5 ml-1.5 ${msg.isRead ? 'text-[#34B7F1]' : 'text-gray-400'}`} />
@@ -198,8 +215,12 @@ export function ChatWindow({
       </div>
 
       {/* Input Area */}
-      <div className="p-5 bg-white/50 backdrop-blur-md z-20">
-        {isSuspended ? (
+      <div className="p-3 sm:p-5 bg-white border-t border-gray-100 z-20 shrink-0">
+        {isConversationsLoading && !activeConvo ? (
+          <div className="flex items-center justify-center py-2.5">
+            <Loader2 className="w-5 h-5 animate-spin text-[#82444D]" />
+          </div>
+        ) : isSuspended ? (
           <div className="bg-red-50 border border-red-200 rounded-xl px-6 py-4 flex flex-col items-center justify-center text-center">
             <p className="text-sm font-semibold text-red-700">This account has been suspended.</p>
             <p className="text-xs text-red-500 mt-1">This user is no longer active on NIRA due to community guidelines violations.</p>
@@ -223,7 +244,7 @@ export function ChatWindow({
         ) : !activeConvo?.isMutual ? (
           activeConvo?.haveISentLike ? (
             <div className="bg-gray-50 border border-gray-200 rounded-xl px-6 py-4 flex flex-col items-center justify-center text-center">
-              <p className="text-sm font-medium text-gray-600">Request sent. Waiting for {activeConvo.otherUser.name} to accept.</p>
+              <p className="text-sm font-medium text-gray-600">Request sent. Waiting for {activeConvo?.otherUser?.name || "them"} to accept.</p>
             </div>
           ) : (
             <div className="bg-[#FFF4F6] border border-[#F1D7D9] rounded-xl px-6 py-4 flex flex-col items-center justify-center text-center">
@@ -239,21 +260,20 @@ export function ChatWindow({
             </div>
           )
         ) : (
-          <form onSubmit={handleSend} className="flex items-center">
+          <form onSubmit={handleSend} className="flex items-center gap-2">
             <input
               type="text"
               placeholder="Type a thoughtful message..."
-              className="flex-1 bg-[#F4EFEF] border-transparent focus:outline-none focus:ring-1 focus:ring-[#82444D]/30 rounded-full pl-6 pr-4 py-3.5 text-sm text-gray-800 placeholder-gray-500 transition-all shadow-inner"
+              className="flex-1 bg-[#F4EFEF] border-transparent focus:outline-none focus:ring-2 focus:ring-brand-900/20 focus:bg-white rounded-full pl-5 pr-4 py-3 text-sm text-gray-800 placeholder-gray-400 transition-all shadow-inner"
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
-              disabled={isSending}
             />
             <button
               type="submit"
-              disabled={!messageText.trim() || isSending}
-              className="ml-3 w-12 h-12 flex items-center justify-center bg-[#82444D] text-white rounded-full hover:bg-[#6c3640] transition-all disabled:opacity-50 shadow-md flex-shrink-0"
+              disabled={!messageText.trim()}
+              className="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center bg-brand-900 text-white rounded-full hover:bg-brand-800 transition-all disabled:opacity-50 shadow-md shrink-0 active:scale-95"
             >
-              {isSending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5 ml-0.5" />}
+              <Send className="w-4 h-4 sm:w-5 sm:h-5 ml-0.5" />
             </button>
           </form>
         )}

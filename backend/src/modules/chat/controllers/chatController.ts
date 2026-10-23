@@ -194,13 +194,29 @@ export const sendMessage = asyncHandler(async (req: Request, res: Response, next
   await conversation.save();
 
   // Create or update a single unread notification for this chat
-  await Notification.findOneAndUpdate(
+  const notif = await Notification.findOneAndUpdate(
     { userId: targetId, type: "new_message", relatedUserId: userId, isRead: false },
     { message: "Sent you a new message", createdAt: new Date() },
-    { upsert: true }
+    { upsert: true, new: true }
   );
 
-  // Emitting the message is done inside the Socket layer, but we can return it
+  // Emit real-time Socket.IO event to recipient's personal room
+  const io = (req as any).io;
+  if (io) {
+    const messagePayload = {
+      _id: message._id.toString(),
+      conversationId: conversation._id.toString(),
+      senderId: userId.toString(),
+      content: message.content,
+      isRead: message.isRead,
+      createdAt: message.createdAt ? message.createdAt.toISOString() : new Date().toISOString(),
+    };
+    io.to(targetId.toString()).emit("receiveMessage", messagePayload);
+    if (notif) {
+      io.to(targetId.toString()).emit("newNotification", notif);
+    }
+  }
+
   res.status(201).json(message);
 });
 

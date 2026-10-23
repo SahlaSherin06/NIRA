@@ -54,7 +54,11 @@ export default function DashboardLayout({
       <GlobalNotificationListener />
       
       {/* Main Page Content */}
-      <main className="flex-1 flex flex-col pt-24 px-4 sm:px-6 lg:px-8 pb-28 md:pb-12 relative w-full max-w-7xl mx-auto">
+      <main className={`flex-1 flex flex-col relative w-full overflow-x-hidden min-w-0 ${
+        pathname === "/messages"
+          ? "pt-20 md:pt-24 px-0 sm:px-4 lg:px-8 pb-16 md:pb-8 max-w-7xl mx-auto"
+          : "pt-24 px-4 sm:px-6 lg:px-8 pb-28 md:pb-12 max-w-7xl mx-auto"
+      }`}>
         {children}
       </main>
     </div>
