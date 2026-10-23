@@ -4,7 +4,6 @@ import { useSession } from "@/features/auth/auth.queries";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { DashboardNavbar } from "@/components/layout/DashboardNavbar";
-import { DashboardFooter } from "@/components/layout/DashboardFooter";
 import { GlobalNotificationListener } from "@/components/notifications/GlobalNotificationListener";
 
 /**
@@ -58,8 +57,6 @@ export default function DashboardLayout({
       <main className="flex-1 flex flex-col pt-24 px-4 sm:px-6 lg:px-8 pb-28 md:pb-12 relative w-full max-w-7xl mx-auto">
         {children}
       </main>
-
-      <DashboardFooter />
     </div>
   );
 }
