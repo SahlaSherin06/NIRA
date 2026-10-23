@@ -312,33 +312,6 @@ export function PartnerFilterPanel({
       case "relocationPlans": nextReloc = tempValue; setRelocationPlans(tempValue); break;
     }
 
-    // Auto-save current selections to localStorage immediately so selections are refresh-proof
-    if (typeof window !== "undefined") {
-      try {
-        const currentPayload: FeedFilterParams = {
-          minAge,
-          maxAge,
-          location: nextLoc === "Anywhere" ? undefined : nextLoc,
-          religion: nextRel === "No preference" ? undefined : nextRel,
-          caste: nextCaste === "No preference" ? undefined : nextCaste,
-          diet: nextDiet === "No preference" ? undefined : nextDiet,
-          smoking: nextSmk === "No preference" ? undefined : nextSmk,
-          drinking: nextAlc === "No preference" ? undefined : (nextAlc === "Drinks" ? "Drinks occasionally" : "Non-drinker"),
-          maritalStatus: nextMar === "No preference" ? undefined : [nextMar],
-          education: nextEdu === "No preference" ? undefined : nextEdu,
-          profession: nextProf === "No preference" ? undefined : nextProf,
-          height: nextHgt === "No preference" ? undefined : nextHgt,
-          nationality: nextNat === "No preference" ? undefined : nextNat,
-          children: nextChd === "No preference" ? undefined : nextChd,
-          language: nextLng === "No preference" ? undefined : nextLng,
-          marriagePlans: nextMarPlan === "No preference" ? undefined : nextMarPlan,
-          relocationPlans: nextReloc === "No preference" ? undefined : nextReloc,
-        };
-        localStorage.setItem(FEED_FILTERS_STORAGE_KEY, JSON.stringify(currentPayload));
-        onApply(currentPayload);
-      } catch (_) {}
-    }
-
     returnToMainView();
   };
 
