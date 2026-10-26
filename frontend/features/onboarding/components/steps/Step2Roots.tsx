@@ -152,12 +152,12 @@ export function Step2Roots({ data, onNext, onBack }: Props) {
     e.currentTarget.value = e.currentTarget.value.replace(/[^a-zA-Z\s]/g, '');
   };
 
-  const inputClasses = "w-full pl-10 pr-8 sm:pl-12 sm:pr-10 py-3.5 sm:py-4 bg-white/70 backdrop-blur-sm hover:bg-white border border-gray-200/80 rounded-xl sm:rounded-2xl focus:outline-none focus:ring-4 focus:ring-brand-900/10 focus:border-brand-900/30 transition-all text-gray-800 shadow-xs sm:shadow-sm appearance-none font-medium text-sm sm:text-base";
+  const inputClasses = "w-full min-w-0 pl-10 pr-4 sm:pl-12 sm:pr-4 py-3.5 sm:py-4 bg-white/70 backdrop-blur-sm hover:bg-white border border-gray-200/80 rounded-xl sm:rounded-2xl focus:outline-none focus:ring-4 focus:ring-brand-900/10 focus:border-brand-900/30 transition-all text-gray-800 shadow-xs sm:shadow-sm appearance-none font-medium text-sm sm:text-base";
   const labelClasses = "block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2 ml-1";
   const iconClasses = "absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 sm:w-5 sm:h-5 text-brand-900/60 pointer-events-none z-10";
 
   return (
-    <form ref={containerRef} onSubmit={handleSubmit(onSubmit)} className="space-y-6 sm:space-y-8 max-w-3xl mx-auto px-0 sm:px-2 pb-10">
+    <form ref={containerRef} onSubmit={handleSubmit(onSubmit)} className="w-full min-w-0 space-y-6 sm:space-y-8 max-w-3xl mx-auto px-0 sm:px-2 pb-10">
       <div className="text-center mb-8 sm:mb-10 gsap-item">
         <div className="w-14 h-14 sm:w-16 sm:h-16 bg-brand-50 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 border border-brand-100">
           <Globe className="w-7 h-7 sm:w-8 sm:h-8 text-brand-900" />
@@ -166,8 +166,8 @@ export function Step2Roots({ data, onNext, onBack }: Props) {
         <p className="text-sm sm:text-base text-gray-500">Tell us where you are from and your cultural background.</p>
       </div>
 
-      <div className="space-y-4 sm:space-y-6">
-        <div className="bg-white sm:bg-white/40 backdrop-blur-sm p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-gray-100 sm:border-white/60 shadow-xs sm:shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-4 sm:space-y-5 gsap-item">
+      <div className="space-y-4 sm:space-y-6 w-full min-w-0">
+        <div className="w-full min-w-0 bg-white sm:bg-white/40 backdrop-blur-sm p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-gray-100 sm:border-white/60 shadow-xs sm:shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-4 sm:space-y-5 gsap-item">
           <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">
             <Compass className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-brand-900" /> Origin
           </h3>
@@ -229,7 +229,7 @@ export function Step2Roots({ data, onNext, onBack }: Props) {
           </div>
         </div>
 
-        <div className="bg-white sm:bg-white/40 backdrop-blur-sm p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-gray-100 sm:border-white/60 shadow-xs sm:shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-4 sm:space-y-5 gsap-item">
+        <div className="w-full min-w-0 bg-white sm:bg-white/40 backdrop-blur-sm p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-gray-100 sm:border-white/60 shadow-xs sm:shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-4 sm:space-y-5 gsap-item">
           <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">
             <MapPin className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-brand-900" /> Current Location
           </h3>
@@ -282,7 +282,7 @@ export function Step2Roots({ data, onNext, onBack }: Props) {
           </div>
         </div>
 
-        <div className="bg-white sm:bg-white/40 backdrop-blur-sm p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-gray-100 sm:border-white/60 shadow-xs sm:shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-4 sm:space-y-5 gsap-item">
+        <div className="w-full min-w-0 bg-white sm:bg-white/40 backdrop-blur-sm p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-gray-100 sm:border-white/60 shadow-xs sm:shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-4 sm:space-y-5 gsap-item">
           <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">
             <Users className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-brand-900" /> Culture & Religion
           </h3>

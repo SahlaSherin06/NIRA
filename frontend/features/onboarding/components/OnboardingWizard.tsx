@@ -115,7 +115,7 @@ export function OnboardingWizard() {
           style={{ width: `${(currentStep / 8) * 100}%` }}
         ></div>
       </div>
-      <div className="w-full mt-2 sm:mt-4">
+      <div className="w-full min-w-0 mt-2 sm:mt-4">
         {renderStep()}
       </div>
     </div>

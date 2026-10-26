@@ -111,7 +111,7 @@ export function Step3Education({ data, onNext, onBack }: Props) {
   const iconClasses = "absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 sm:w-5 sm:h-5 text-brand-900/60 pointer-events-none z-10";
 
   return (
-    <form ref={containerRef} onSubmit={handleSubmit(onSubmit)} className="space-y-6 sm:space-y-8 max-w-3xl mx-auto px-0 sm:px-2 pb-10">
+    <form ref={containerRef} onSubmit={handleSubmit(onSubmit)} className="w-full min-w-0 space-y-6 sm:space-y-8 max-w-3xl mx-auto px-0 sm:px-2 pb-10">
       <div className="text-center mb-8 sm:mb-10 gsap-item">
         <div className="w-14 h-14 sm:w-16 sm:h-16 bg-brand-50 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 border border-brand-100">
           <GraduationCap className="w-7 h-7 sm:w-8 sm:h-8 text-brand-900" />
@@ -120,8 +120,8 @@ export function Step3Education({ data, onNext, onBack }: Props) {
         <p className="text-sm sm:text-base text-gray-500">Tell us about your educational background and profession.</p>
       </div>
 
-      <div className="space-y-4 sm:space-y-6">
-        <div className="bg-white sm:bg-white/40 backdrop-blur-sm p-4 sm:p-8 rounded-2xl sm:rounded-3xl border border-gray-100 sm:border-white/60 shadow-xs sm:shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-4 sm:space-y-6 gsap-item">
+      <div className="space-y-4 sm:space-y-6 w-full min-w-0">
+        <div className="w-full min-w-0 bg-white sm:bg-white/40 backdrop-blur-sm p-4 sm:p-8 rounded-2xl sm:rounded-3xl border border-gray-100 sm:border-white/60 shadow-xs sm:shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-4 sm:space-y-6 gsap-item">
           <div>
             <label className={labelClasses}>Highest Education Level</label>
             {wEducation !== "Other" ? (
@@ -150,7 +150,7 @@ export function Step3Education({ data, onNext, onBack }: Props) {
           </div>
         </div>
 
-        <div className="bg-white sm:bg-white/40 backdrop-blur-sm p-4 sm:p-8 rounded-2xl sm:rounded-3xl border border-gray-100 sm:border-white/60 shadow-xs sm:shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-4 sm:space-y-6 gsap-item">
+        <div className="w-full min-w-0 bg-white sm:bg-white/40 backdrop-blur-sm p-4 sm:p-8 rounded-2xl sm:rounded-3xl border border-gray-100 sm:border-white/60 shadow-xs sm:shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-4 sm:space-y-6 gsap-item">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             <div>
               <label className={labelClasses}>Current Profession</label>

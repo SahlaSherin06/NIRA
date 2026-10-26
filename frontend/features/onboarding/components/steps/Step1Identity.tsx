@@ -126,7 +126,7 @@ export function Step1Identity({ data, onNext, onBack }: Props) {
   );
 
   return (
-    <form ref={containerRef} onSubmit={handleSubmit(onSubmit)} className="space-y-6 sm:space-y-8 max-w-3xl mx-auto px-0 sm:px-2 pb-10">
+    <form ref={containerRef} onSubmit={handleSubmit(onSubmit)} className="w-full min-w-0 space-y-6 sm:space-y-8 max-w-3xl mx-auto px-0 sm:px-2 pb-10">
       <div className="text-center mb-8 sm:mb-10 gsap-item">
         <div className="w-14 h-14 sm:w-16 sm:h-16 bg-brand-50 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 border border-brand-100">
           <Heart className="w-7 h-7 sm:w-8 sm:h-8 text-brand-900" />

@@ -44,7 +44,7 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F9F7F6] flex flex-col items-center justify-start sm:justify-center p-0 sm:py-10 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#F9F7F6] w-full flex flex-col items-center justify-start sm:justify-center p-0 sm:py-10 sm:px-6 lg:px-8">
       <OnboardingWizard />
     </div>
   );

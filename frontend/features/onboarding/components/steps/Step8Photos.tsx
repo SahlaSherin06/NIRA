@@ -112,7 +112,7 @@ export function Step8Photos({ data, onNext, onBack }: Props) {
   };
 
   return (
-    <form ref={containerRef} onSubmit={handleSubmit(onSubmit)} className="space-y-6 sm:space-y-8 max-w-3xl mx-auto px-0 sm:px-2 pb-10">
+    <form ref={containerRef} onSubmit={handleSubmit(onSubmit)} className="w-full min-w-0 space-y-6 sm:space-y-8 max-w-3xl mx-auto px-0 sm:px-2 pb-10">
       <div className="text-center mb-8 sm:mb-10 gsap-item">
         <div className="w-14 h-14 sm:w-16 sm:h-16 bg-brand-50 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 border border-brand-100">
           <Camera className="w-7 h-7 sm:w-8 sm:h-8 text-brand-900" />
@@ -121,8 +121,8 @@ export function Step8Photos({ data, onNext, onBack }: Props) {
         <p className="text-sm sm:text-base text-gray-500">Add your best photos to get more matches.</p>
       </div>
 
-      <div className="space-y-4 sm:space-y-6">
-        <div className="bg-white sm:bg-white/40 backdrop-blur-sm p-4 sm:p-8 rounded-2xl sm:rounded-3xl border border-gray-100 sm:border-white/60 shadow-xs sm:shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-4 sm:space-y-5 gsap-item">
+      <div className="space-y-4 sm:space-y-6 w-full min-w-0">
+        <div className="w-full min-w-0 bg-white sm:bg-white/40 backdrop-blur-sm p-4 sm:p-8 rounded-2xl sm:rounded-3xl border border-gray-100 sm:border-white/60 shadow-xs sm:shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-4 sm:space-y-5 gsap-item">
           <div className="flex justify-between items-center mb-1 sm:mb-2">
             <label className="block text-xs sm:text-sm font-bold text-gray-800 ml-1 flex items-center gap-2">
               <Camera className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-brand-900" /> Main Profile Photo
