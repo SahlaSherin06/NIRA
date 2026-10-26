@@ -32,6 +32,7 @@ interface Props {
   data: Partial<OnboardingData>;
   onNext: (data: Partial<OnboardingData>) => void;
   onBack: () => void;
+  onSaveDraft?: (data: Partial<OnboardingData>) => void;
 }
 
 /**
@@ -40,8 +41,9 @@ interface Props {
  * @param props.data - The current onboarding draft data
  * @param props.onNext - Callback fired when the user successfully completes this step
  * @param props.onBack - Optional callback to return to the previous step
+ * @param props.onSaveDraft - Callback to auto-save field values to MongoDB draft
  */
-export function Step5Personality({ data, onNext, onBack }: Props) {
+export function Step5Personality({ data, onNext, onBack, onSaveDraft }: Props) {
   const containerRef = useRef<HTMLFormElement>(null);
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<Step5Values>({
@@ -58,6 +60,13 @@ export function Step5Personality({ data, onNext, onBack }: Props) {
   const wBio = watch("bio");
 
   useEffect(() => {
+    const subscription = watch((val) => {
+      onSaveDraft?.(val as Partial<OnboardingData>);
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, onSaveDraft]);
+
+  useEffect(() => {
     if (containerRef.current) {
       const elements = containerRef.current.querySelectorAll('.gsap-item');
       gsap.set(elements, { opacity: 0, y: 30, scale: 0.95 });
@@ -68,7 +77,8 @@ export function Step5Personality({ data, onNext, onBack }: Props) {
         scale: 1,
         duration: 0.8, 
         stagger: 0.15, 
-        ease: "back.out(1.2)"
+        ease: "back.out(1.2)",
+        clearProps: "transform,scale"
       });
     }
   }, []);

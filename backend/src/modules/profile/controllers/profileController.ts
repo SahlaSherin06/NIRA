@@ -215,6 +215,9 @@ export const updateMyProfile = asyncHandler(async (req: Request, res: Response, 
       await Preference.findOneAndUpdate({ userId }, { $set: { ...mappedPref, userId } }, { returnDocument: 'after', upsert: true });
     }
 
+    // Clean up draft once onboarding is completed
+    await OnboardingDraft.deleteOne({ userId });
+
     res.status(200).json({ message: "Profile updated successfully" });
 });
 

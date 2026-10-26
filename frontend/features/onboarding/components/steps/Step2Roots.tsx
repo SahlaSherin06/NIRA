@@ -68,6 +68,7 @@ interface Props {
   data: Partial<OnboardingData>;
   onNext: (data: Partial<OnboardingData>) => void;
   onBack: () => void;
+  onSaveDraft?: (data: Partial<OnboardingData>) => void;
 }
 
 /**
@@ -76,8 +77,9 @@ interface Props {
  * @param props.data - The current onboarding draft data
  * @param props.onNext - Callback fired when the user successfully completes this step
  * @param props.onBack - Optional callback to return to the previous step
+ * @param props.onSaveDraft - Callback to auto-save field values to MongoDB draft
  */
-export function Step2Roots({ data, onNext, onBack }: Props) {
+export function Step2Roots({ data, onNext, onBack, onSaveDraft }: Props) {
   const containerRef = useRef<HTMLFormElement>(null);
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<Step2Values>({
@@ -115,6 +117,25 @@ export function Step2Roots({ data, onNext, onBack }: Props) {
   const wEthnicity = watch("ethnicity");
   const wMotherTongue = watch("motherTongue");
 
+  // Auto-save selections to MongoDB draft whenever any value changes
+  useEffect(() => {
+    const subscription = watch((val) => {
+      const partial: Partial<OnboardingData> = {
+        nationality: val.nationality === "Other" ? val.nationalityOther : val.nationality,
+        grewUpIn: val.grewUpIn === "Other" ? val.grewUpInOther : val.grewUpIn,
+        country: val.country === "Other" ? val.countryOther : val.country,
+        state: val.state,
+        city: val.city,
+        religion: val.religion === "Other" ? val.religionOther : val.religion,
+        caste: val.caste,
+        ethnicity: val.ethnicity === "Other" ? val.ethnicityOther : val.ethnicity,
+        motherTongue: val.motherTongue === "Other" ? val.motherTongueOther : val.motherTongue,
+      };
+      onSaveDraft?.(partial);
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, onSaveDraft]);
+
   useEffect(() => {
     if (containerRef.current) {
       const elements = containerRef.current.querySelectorAll('.gsap-item');
@@ -126,7 +147,8 @@ export function Step2Roots({ data, onNext, onBack }: Props) {
         scale: 1,
         duration: 0.8, 
         stagger: 0.1, 
-        ease: "back.out(1.2)"
+        ease: "back.out(1.2)",
+        clearProps: "transform,scale"
       });
     }
   }, []);

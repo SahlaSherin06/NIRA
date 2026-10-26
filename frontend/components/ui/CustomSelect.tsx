@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ChevronDown, Check, Search, X } from "lucide-react";
+import { createPortal } from "react-dom";
+import { ChevronDown, Check, X } from "lucide-react";
 
 interface CustomSelectProps {
   value: string;
@@ -9,14 +10,16 @@ interface CustomSelectProps {
   options: string[];
   placeholder?: string;
   disabled?: boolean;
-  searchable?: boolean;
   className?: string;
 }
 
 /**
  * Component: CustomSelect
- * Mobile-responsive custom select dropdown that strictly adheres to the layout width,
- * avoiding native browser OS popup overflow issues in mobile views.
+ * Mobile-responsive custom select dropdown.
+ * - On Mobile (screen < 640px): Opens a Bottom Sheet Modal via React Portal directly into document.body with z-[9999],
+ *   completely bypassing any CSS stacking context or card overflow clipping.
+ * - On Desktop (screen >= 640px): Opens a smooth dropdown menu below the trigger.
+ * - No upfront text search input: pure selectable options list. Custom typing is only shown when the user explicitly selects "Other".
  */
 export function CustomSelect({
   value,
@@ -24,23 +27,21 @@ export function CustomSelect({
   options,
   placeholder = "Select an option",
   disabled = false,
-  searchable,
   className = "",
 }: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [mounted, setMounted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Auto-enable search for lists with more than 10 items unless explicitly set
-  const isSearchable = searchable ?? options.length > 10;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  // Close when clicking outside
+  // Close desktop dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
-        setSearchTerm("");
       }
     }
     if (isOpen) {
@@ -51,23 +52,21 @@ export function CustomSelect({
     };
   }, [isOpen]);
 
-  // Focus search input when dropdown opens
+  // Lock mobile body scroll when bottom sheet is open
   useEffect(() => {
-    if (isOpen && isSearchable && searchInputRef.current) {
-      setTimeout(() => {
-        searchInputRef.current?.focus();
-      }, 50);
+    if (isOpen && window.innerWidth < 640) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
     }
-  }, [isOpen, isSearchable]);
-
-  const filteredOptions = isSearchable && searchTerm.trim()
-    ? options.filter((opt) => opt.toLowerCase().includes(searchTerm.toLowerCase().trim()))
-    : options;
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isOpen]);
 
   const handleSelect = (option: string) => {
     onChange(option);
     setIsOpen(false);
-    setSearchTerm("");
   };
 
   return (
@@ -91,69 +90,90 @@ export function CustomSelect({
         />
       </button>
 
-      {/* Dropdown Menu (Strictly constrained within parent width) */}
+      {/* DESKTOP Dropdown Menu (>= sm) */}
       {isOpen && (
-        <div 
-          className="absolute left-0 top-full mt-1.5 w-full bg-white rounded-xl sm:rounded-2xl shadow-xl shadow-brand-900/10 border border-gray-200/90 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+        <div
+          className="hidden sm:block absolute left-0 top-full mt-1.5 w-full bg-white rounded-2xl shadow-xl shadow-brand-900/10 border border-gray-200/90 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150"
           style={{ maxWidth: "100%" }}
         >
-          {isSearchable && (
-            <div className="p-2 border-b border-gray-100 bg-[#FAF8F7]">
-              <div className="relative flex items-center">
-                <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 pointer-events-none" />
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search..."
-                  className="w-full pl-8 pr-7 py-1.5 text-xs bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-900/20 text-gray-800 placeholder:text-gray-400"
-                  onClick={(e) => e.stopPropagation()}
-                />
-                {searchTerm && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSearchTerm("");
-                    }}
-                    className="absolute right-2 text-gray-400 hover:text-gray-600"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-
-          <div className="max-h-56 sm:max-h-64 overflow-y-auto p-1.5 space-y-0.5 scrollbar-thin scrollbar-thumb-gray-200">
-            {filteredOptions.length > 0 ? (
-              filteredOptions.map((opt) => {
-                const isSelected = value === opt;
-                return (
-                  <button
-                    key={opt}
-                    type="button"
-                    onClick={() => handleSelect(opt)}
-                    className={`w-full text-left px-3 py-2 sm:py-2.5 text-xs sm:text-sm rounded-lg sm:rounded-xl transition-colors flex items-center justify-between ${
-                      isSelected
-                        ? "bg-brand-900 text-white font-semibold"
-                        : "text-gray-700 hover:bg-brand-50 hover:text-brand-900"
-                    }`}
-                  >
-                    <span className="truncate pr-2">{opt}</span>
-                    {isSelected && <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white shrink-0" />}
-                  </button>
-                );
-              })
-            ) : (
-              <div className="py-4 text-center text-xs text-gray-400">
-                No matching options found
-              </div>
-            )}
+          <div className="max-h-60 overflow-y-auto p-1.5 space-y-0.5 scrollbar-thin scrollbar-thumb-gray-200">
+            {options.map((opt) => {
+              const isSelected = value === opt;
+              return (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => handleSelect(opt)}
+                  className={`w-full text-left px-3 py-2.5 text-sm rounded-xl transition-colors flex items-center justify-between ${
+                    isSelected
+                      ? "bg-brand-900 text-white font-semibold"
+                      : "text-gray-700 hover:bg-brand-50 hover:text-brand-900"
+                  }`}
+                >
+                  <span className="truncate pr-2">{opt}</span>
+                  {isSelected && <Check className="w-4 h-4 text-white shrink-0" />}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
+
+      {/* MOBILE Bottom Sheet Portal (< sm) */}
+      {mounted &&
+        isOpen &&
+        createPortal(
+          <div className="sm:hidden fixed inset-0 z-[9999] flex flex-col justify-end">
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity duration-300"
+              onClick={() => setIsOpen(false)}
+            />
+
+            {/* Bottom Drawer Sheet */}
+            <div className="relative z-10 w-full max-h-[80vh] bg-white rounded-t-[2rem] shadow-2xl p-5 pb-8 flex flex-col animate-in slide-in-from-bottom duration-300">
+              {/* Top Handle Pill */}
+              <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-3.5 shrink-0" />
+
+              {/* Sheet Header */}
+              <div className="flex items-center justify-between pb-3.5 border-b border-gray-100 shrink-0 px-1">
+                <h3 className="font-serif font-semibold text-gray-900 text-base">
+                  {placeholder}
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setIsOpen(false)}
+                  className="w-8 h-8 rounded-full bg-gray-100 active:bg-gray-200 flex items-center justify-center text-gray-500 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Options List */}
+              <div className="overflow-y-auto max-h-[60vh] py-2.5 space-y-1.5 scrollbar-thin">
+                {options.map((opt) => {
+                  const isSelected = value === opt;
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => handleSelect(opt)}
+                      className={`w-full text-left px-4 py-3.5 rounded-xl text-sm font-medium transition-all flex items-center justify-between ${
+                        isSelected
+                          ? "bg-brand-900 text-white font-semibold shadow-sm"
+                          : "text-gray-700 bg-gray-50/70 hover:bg-brand-50 hover:text-brand-900 active:bg-gray-100"
+                      }`}
+                    >
+                      <span className="truncate pr-2">{opt}</span>
+                      {isSelected && <Check className="w-4 h-4 text-white shrink-0" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

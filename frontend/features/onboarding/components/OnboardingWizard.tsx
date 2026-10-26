@@ -1,5 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { OnboardingData } from "../types";
 import { useOnboarding } from "../onboarding.queries";
@@ -18,7 +19,7 @@ const DRAFT_KEY = "nira_onboarding_draft";
 /**
  * Component: OnboardingWizard
  * The master controller for the onboarding flow.
- * Manages the current step state, local storage drafting, and final API submission.
+ * Manages the current step state, MongoDB draft persistence, local storage drafting, and final submission.
  */
 export function OnboardingWizard() {
   const router = useRouter();
@@ -28,31 +29,95 @@ export function OnboardingWizard() {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<Partial<OnboardingData>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // On mount, load draft from localStorage
+  // On mount, fetch draft from MongoDB
   useEffect(() => {
-    const savedDraft = localStorage.getItem(DRAFT_KEY);
-    if (savedDraft) {
+    let isMounted = true;
+    async function initDraft() {
       try {
-        const parsed = JSON.parse(savedDraft);
-        if (parsed.data) setFormData(parsed.data);
-        if (parsed.step) setCurrentStep(parsed.step);
-      } catch (e) {
-        console.error("Failed to parse onboarding draft", e);
+        const backendDraft = await getDraftApi();
+        if (!isMounted) return;
+
+        if (backendDraft && backendDraft.data && Object.keys(backendDraft.data).length > 0) {
+          // Existing draft found in MongoDB
+          const step = Math.min(Math.max(backendDraft.step || 1, 1), 8);
+          setFormData(backendDraft.data);
+          setCurrentStep(step);
+          localStorage.setItem(DRAFT_KEY, JSON.stringify({ step, data: backendDraft.data }));
+        } else {
+          // New user or no draft in MongoDB: fresh start at Step 1
+          localStorage.removeItem(DRAFT_KEY);
+          setFormData({});
+          setCurrentStep(1);
+        }
+      } catch (err) {
+        console.error("Error loading onboarding draft from MongoDB:", err);
+        // Fallback to localStorage
+        const savedDraft = localStorage.getItem(DRAFT_KEY);
+        if (savedDraft) {
+          try {
+            const parsed = JSON.parse(savedDraft);
+            if (parsed.data) setFormData(parsed.data);
+            if (parsed.step) setCurrentStep(Math.min(Math.max(parsed.step, 1), 8));
+          } catch (e) {
+            console.error("Failed to parse local draft", e);
+          }
+        }
+      } finally {
+        if (isMounted) setIsLoaded(true);
       }
     }
-    setIsLoaded(true);
+
+    initDraft();
+    return () => {
+      isMounted = false;
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
   }, []);
 
+  // Continuous Auto-Save to MongoDB & localStorage on input/selection change
+  const handleSaveDraft = useCallback((partialData: Partial<OnboardingData>, stepOverride?: number) => {
+    setFormData((prev) => {
+      const merged = { ...prev, ...partialData };
+      const stepToSave = stepOverride ?? currentStep;
+
+      // Immediate local save
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({ step: stepToSave, data: merged }));
+      } catch (e) {
+        console.error("LocalStorage save error:", e);
+      }
+
+      // Debounced backend MongoDB save (600ms)
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = setTimeout(async () => {
+        try {
+          await saveDraftApi({ step: stepToSave, data: merged });
+        } catch (err) {
+          console.error("Auto-save draft to MongoDB failed:", err);
+        }
+      }, 600);
+
+      return merged;
+    });
+  }, [currentStep]);
+
   const handleNext = async (stepData: Partial<OnboardingData>) => {
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     const newData = { ...formData, ...stepData };
     setFormData(newData);
     
     if (currentStep < 8) {
       const nextStep = currentStep + 1;
       setCurrentStep(nextStep);
-      // Save draft to localStorage
+      // Immediately persist next step to localStorage & MongoDB
       localStorage.setItem(DRAFT_KEY, JSON.stringify({ step: nextStep, data: newData }));
+      try {
+        await saveDraftApi({ step: nextStep, data: newData });
+      } catch (err) {
+        console.error("Failed to save draft to MongoDB on Next:", err);
+      }
       window.scrollTo(0, 0);
     } else {
       try {
@@ -71,31 +136,36 @@ export function OnboardingWizard() {
     }
   };
 
-  const handleBack = () => {
+  const handleBack = async () => {
     if (currentStep > 1) {
       const prevStep = currentStep - 1;
       setCurrentStep(prevStep);
       // Save draft with previous step
       localStorage.setItem(DRAFT_KEY, JSON.stringify({ step: prevStep, data: formData }));
+      try {
+        await saveDraftApi({ step: prevStep, data: formData });
+      } catch (err) {
+        console.error("Failed to save draft to MongoDB on Back:", err);
+      }
       window.scrollTo(0, 0);
     }
   };
 
   const renderStep = () => {
     switch (currentStep) {
-      case 1: return <Step1Identity data={formData} onNext={handleNext} />;
-      case 2: return <Step2Roots data={formData} onNext={handleNext} onBack={handleBack} />;
-      case 3: return <Step3Education data={formData} onNext={handleNext} onBack={handleBack} />;
-      case 4: return <Step4Lifestyle data={formData} onNext={handleNext} onBack={handleBack} />;
-      case 5: return <Step5Personality data={formData} onNext={handleNext} onBack={handleBack} />;
-      case 6: return <Step6Intentions data={formData} onNext={handleNext} onBack={handleBack} />;
-      case 7: return <Step8Photos data={formData} onNext={handleNext} onBack={handleBack} />;
+      case 1: return <Step1Identity data={formData} onNext={handleNext} onSaveDraft={handleSaveDraft} />;
+      case 2: return <Step2Roots data={formData} onNext={handleNext} onBack={handleBack} onSaveDraft={handleSaveDraft} />;
+      case 3: return <Step3Education data={formData} onNext={handleNext} onBack={handleBack} onSaveDraft={handleSaveDraft} />;
+      case 4: return <Step4Lifestyle data={formData} onNext={handleNext} onBack={handleBack} onSaveDraft={handleSaveDraft} />;
+      case 5: return <Step5Personality data={formData} onNext={handleNext} onBack={handleBack} onSaveDraft={handleSaveDraft} />;
+      case 6: return <Step6Intentions data={formData} onNext={handleNext} onBack={handleBack} onSaveDraft={handleSaveDraft} />;
+      case 7: return <Step8Photos data={formData} onNext={handleNext} onBack={handleBack} onSaveDraft={handleSaveDraft} />;
       case 8: return <Step9Promises data={formData} onNext={handleNext} onBack={handleBack} isSubmitting={isSubmitting} />;
       default: return null;
     }
   };
 
-  // Prevent rendering until localStorage is read to avoid hydration mismatch
+  // Prevent rendering until draft check completes
   if (!isLoaded) {
     return (
       <div className="min-h-screen bg-[#F9F7F6] flex items-center justify-center">
@@ -121,4 +191,3 @@ export function OnboardingWizard() {
     </div>
   );
 }
-

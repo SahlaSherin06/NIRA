@@ -166,6 +166,7 @@ export function RegisterForm() {
       sessionStorage.removeItem("nira_reg_email");
       sessionStorage.removeItem("nira_reg_gender");
       sessionStorage.removeItem("nira_reg_createdFor");
+      localStorage.removeItem("nira_onboarding_draft");
       
       if (response.user?.isOnboardingComplete) {
         router.replace("/home");
@@ -182,6 +183,7 @@ export function RegisterForm() {
       try {
         setError(null);
         const response = await signInWithGoogle.mutateAsync(tokenResponse.access_token);
+        localStorage.removeItem("nira_onboarding_draft");
         
         if (response.user?.isOnboardingComplete) {
           router.replace("/home");
