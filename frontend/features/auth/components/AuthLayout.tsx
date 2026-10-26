@@ -15,17 +15,17 @@ export function AuthLayout({
       {/* Soft background glow */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-900/5 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-brand-900/5 rounded-full blur-3xl pointer-events-none"></div>
-      <header className="w-full p-6 absolute top-0 left-0 flex justify-between items-center z-10">
+      <header className="w-full p-4 sm:p-6 absolute top-0 left-0 flex justify-between items-center z-10">
         <Link 
           href="/" 
-          className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-brand-900 transition-colors"
+          className="inline-flex items-center text-xs sm:text-sm font-medium text-gray-500 hover:text-brand-900 transition-colors"
         >
-          <ArrowLeft className="w-4 h-4 mr-2" />
+          <ArrowLeft className="w-4 h-4 mr-1.5 sm:mr-2" />
           Back to Home
         </Link>
       </header>
       
-      <div className="flex-1 flex flex-col items-center justify-center min-h-screen py-10 px-4">
+      <div className="flex-1 flex flex-col items-center justify-center min-h-screen pt-16 pb-8 sm:py-10 px-3.5 sm:px-4">
         <div className="w-full flex justify-center">
           {children}
         </div>

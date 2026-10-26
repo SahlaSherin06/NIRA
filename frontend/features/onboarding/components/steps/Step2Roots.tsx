@@ -7,6 +7,7 @@ import * as z from "zod";
 import gsap from "gsap";
 import { Globe, MapPin, Building2, Book, Languages, Compass, Users, Edit3, X } from "lucide-react";
 import { OnboardingData } from "../../types";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const step2Schema = z.object({
   nationality: z.string().min(1, "Nationality is required"),
@@ -151,36 +152,40 @@ export function Step2Roots({ data, onNext, onBack }: Props) {
     e.currentTarget.value = e.currentTarget.value.replace(/[^a-zA-Z\s]/g, '');
   };
 
-  const inputClasses = "w-full pl-12 pr-10 py-4 bg-white/70 backdrop-blur-sm hover:bg-white border border-gray-200/80 rounded-2xl focus:outline-none focus:ring-4 focus:ring-brand-900/10 focus:border-brand-900/30 transition-all text-gray-800 shadow-sm appearance-none font-medium";
-  const labelClasses = "block text-sm font-semibold text-gray-700 mb-2 ml-1";
-  const iconClasses = "absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-900/60 pointer-events-none z-10";
+  const inputClasses = "w-full pl-10 pr-8 sm:pl-12 sm:pr-10 py-3.5 sm:py-4 bg-white/70 backdrop-blur-sm hover:bg-white border border-gray-200/80 rounded-xl sm:rounded-2xl focus:outline-none focus:ring-4 focus:ring-brand-900/10 focus:border-brand-900/30 transition-all text-gray-800 shadow-xs sm:shadow-sm appearance-none font-medium text-sm sm:text-base";
+  const labelClasses = "block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2 ml-1";
+  const iconClasses = "absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 sm:w-5 sm:h-5 text-brand-900/60 pointer-events-none z-10";
 
   return (
-    <form ref={containerRef} onSubmit={handleSubmit(onSubmit)} className="space-y-8 max-w-3xl mx-auto px-2 pb-10">
-      <div className="text-center mb-10 gsap-item">
-        <div className="w-16 h-16 bg-brand-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-brand-100">
-          <Globe className="w-8 h-8 text-brand-900" />
+    <form ref={containerRef} onSubmit={handleSubmit(onSubmit)} className="space-y-6 sm:space-y-8 max-w-3xl mx-auto px-0 sm:px-2 pb-10">
+      <div className="text-center mb-8 sm:mb-10 gsap-item">
+        <div className="w-14 h-14 sm:w-16 sm:h-16 bg-brand-50 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 border border-brand-100">
+          <Globe className="w-7 h-7 sm:w-8 sm:h-8 text-brand-900" />
         </div>
-        <h2 className="text-3xl font-serif text-brand-900 mb-2">Roots & Background</h2>
-        <p className="text-base text-gray-500">Tell us where you are from and your cultural background.</p>
+        <h2 className="text-2xl sm:text-3xl font-serif text-brand-900 mb-1.5 sm:mb-2">Roots & Background</h2>
+        <p className="text-sm sm:text-base text-gray-500">Tell us where you are from and your cultural background.</p>
       </div>
 
-      <div className="space-y-6">
-<div className="bg-white/40 backdrop-blur-sm p-6 rounded-3xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-5 gsap-item">
-          <h3 className="text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">
-            <Compass className="w-5 h-5 text-brand-900" /> Origin
+      <div className="space-y-4 sm:space-y-6">
+        <div className="bg-white sm:bg-white/40 backdrop-blur-sm p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-gray-100 sm:border-white/60 shadow-xs sm:shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-4 sm:space-y-5 gsap-item">
+          <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">
+            <Compass className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-brand-900" /> Origin
           </h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             <div>
               <label className={labelClasses}>Nationality (Passport)</label>
               {wNationality !== "Other" ? (
                 <div className="relative">
                   <Globe className={iconClasses} />
-                  <select {...register("nationality")} className={inputClasses}>
-                    <option value="">Select Nationality</option>
-                    {countries.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                  <CustomSelect
+                    value={wNationality || ""}
+                    onChange={(val) => setValue("nationality", val, { shouldValidate: true })}
+                    options={countries}
+                    placeholder="Select Nationality"
+                    className={inputClasses}
+                  />
+                  <input type="hidden" {...register("nationality")} />
                   {errors.nationality && <p className="mt-2 ml-1 text-xs text-red-500 font-medium">{errors.nationality.message}</p>}
                 </div>
               ) : (
@@ -200,10 +205,14 @@ export function Step2Roots({ data, onNext, onBack }: Props) {
               {wGrewUpIn !== "Other" ? (
                 <div className="relative">
                   <MapPin className={iconClasses} />
-                  <select {...register("grewUpIn")} className={inputClasses}>
-                    <option value="">Select Country</option>
-                    {countries.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                  <CustomSelect
+                    value={wGrewUpIn || ""}
+                    onChange={(val) => setValue("grewUpIn", val, { shouldValidate: true })}
+                    options={countries}
+                    placeholder="Select Country"
+                    className={inputClasses}
+                  />
+                  <input type="hidden" {...register("grewUpIn")} />
                   {errors.grewUpIn && <p className="mt-2 ml-1 text-xs text-red-500 font-medium">{errors.grewUpIn.message}</p>}
                 </div>
               ) : (
@@ -219,9 +228,10 @@ export function Step2Roots({ data, onNext, onBack }: Props) {
             </div>
           </div>
         </div>
-<div className="bg-white/40 backdrop-blur-sm p-6 rounded-3xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-5 gsap-item">
-          <h3 className="text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">
-            <MapPin className="w-5 h-5 text-brand-900" /> Current Location
+
+        <div className="bg-white sm:bg-white/40 backdrop-blur-sm p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-gray-100 sm:border-white/60 shadow-xs sm:shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-4 sm:space-y-5 gsap-item">
+          <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">
+            <MapPin className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-brand-900" /> Current Location
           </h3>
           
           <div>
@@ -229,10 +239,14 @@ export function Step2Roots({ data, onNext, onBack }: Props) {
             {wCountry !== "Other" ? (
               <div className="relative">
                 <Globe className={iconClasses} />
-                <select {...register("country")} className={inputClasses}>
-                  <option value="">Select Country</option>
-                  {countries.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
+                <CustomSelect
+                  value={wCountry || ""}
+                  onChange={(val) => setValue("country", val, { shouldValidate: true })}
+                  options={countries}
+                  placeholder="Select Country"
+                  className={inputClasses}
+                />
+                <input type="hidden" {...register("country")} />
                 {errors.country && <p className="mt-2 ml-1 text-xs text-red-500 font-medium">{errors.country.message}</p>}
               </div>
             ) : (
@@ -247,7 +261,7 @@ export function Step2Roots({ data, onNext, onBack }: Props) {
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             <div>
               <label className={labelClasses}>State / Province</label>
               <div className="relative">
@@ -267,21 +281,26 @@ export function Step2Roots({ data, onNext, onBack }: Props) {
             </div>
           </div>
         </div>
-<div className="bg-white/40 backdrop-blur-sm p-6 rounded-3xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-5 gsap-item">
-          <h3 className="text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">
-            <Users className="w-5 h-5 text-brand-900" /> Culture & Religion
+
+        <div className="bg-white sm:bg-white/40 backdrop-blur-sm p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-gray-100 sm:border-white/60 shadow-xs sm:shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-4 sm:space-y-5 gsap-item">
+          <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">
+            <Users className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-brand-900" /> Culture & Religion
           </h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             <div>
               <label className={labelClasses}>Religion</label>
               {wReligion !== "Other" ? (
                 <div className="relative">
                   <Book className={iconClasses} />
-                  <select {...register("religion")} className={inputClasses}>
-                    <option value="">Select Religion</option>
-                    {religions.map(r => <option key={r} value={r}>{r}</option>)}
-                  </select>
+                  <CustomSelect
+                    value={wReligion || ""}
+                    onChange={(val) => setValue("religion", val, { shouldValidate: true })}
+                    options={religions}
+                    placeholder="Select Religion"
+                    className={inputClasses}
+                  />
+                  <input type="hidden" {...register("religion")} />
                   {errors.religion && <p className="mt-2 ml-1 text-xs text-red-500 font-medium">{errors.religion.message}</p>}
                 </div>
               ) : (
@@ -309,10 +328,14 @@ export function Step2Roots({ data, onNext, onBack }: Props) {
               {wEthnicity !== "Other" ? (
                 <div className="relative">
                   <Globe className={iconClasses} />
-                  <select {...register("ethnicity")} className={inputClasses}>
-                    <option value="">Select Ethnicity</option>
-                    {ethnicities.map(e => <option key={e} value={e}>{e}</option>)}
-                  </select>
+                  <CustomSelect
+                    value={wEthnicity || ""}
+                    onChange={(val) => setValue("ethnicity", val, { shouldValidate: true })}
+                    options={ethnicities}
+                    placeholder="Select Ethnicity"
+                    className={inputClasses}
+                  />
+                  <input type="hidden" {...register("ethnicity")} />
                   {errors.ethnicity && <p className="mt-2 ml-1 text-xs text-red-500 font-medium">{errors.ethnicity.message}</p>}
                 </div>
               ) : (
@@ -332,10 +355,14 @@ export function Step2Roots({ data, onNext, onBack }: Props) {
               {wMotherTongue !== "Other" ? (
                 <div className="relative">
                   <Languages className={iconClasses} />
-                  <select {...register("motherTongue")} className={inputClasses}>
-                    <option value="">Select Language</option>
-                    {languages.map(l => <option key={l} value={l}>{l}</option>)}
-                  </select>
+                  <CustomSelect
+                    value={wMotherTongue || ""}
+                    onChange={(val) => setValue("motherTongue", val, { shouldValidate: true })}
+                    options={languages}
+                    placeholder="Select Language"
+                    className={inputClasses}
+                  />
+                  <input type="hidden" {...register("motherTongue")} />
                   {errors.motherTongue && <p className="mt-2 ml-1 text-xs text-red-500 font-medium">{errors.motherTongue.message}</p>}
                 </div>
               ) : (
@@ -354,11 +381,11 @@ export function Step2Roots({ data, onNext, onBack }: Props) {
 
       </div>
 
-      <div className="flex gap-4 pt-10 gsap-item">
-        <button type="button" onClick={onBack} className="w-1/3 py-4 px-4 rounded-full text-sm font-semibold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 transition-all shadow-sm">
+      <div className="flex gap-3 sm:gap-4 pt-6 sm:pt-10 gsap-item">
+        <button type="button" onClick={onBack} className="w-1/3 py-3.5 sm:py-4 px-3 sm:px-4 rounded-full text-xs sm:text-sm font-semibold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 transition-all shadow-sm">
           Back
         </button>
-        <button type="submit" className="flex-1 py-4 px-4 rounded-full text-sm font-semibold text-white bg-brand-900 hover:bg-brand-800 transition-all shadow-md shadow-brand-900/20 transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
+        <button type="submit" className="flex-1 py-3.5 sm:py-4 px-4 rounded-full text-xs sm:text-sm font-semibold text-white bg-brand-900 hover:bg-brand-800 transition-all shadow-md shadow-brand-900/20 transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
           Continue
         </button>
       </div>

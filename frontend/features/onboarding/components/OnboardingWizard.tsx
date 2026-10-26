@@ -108,17 +108,15 @@ export function OnboardingWizard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F9F7F6] flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="bg-white/80 backdrop-blur-xl p-6 sm:p-10 md:p-14 rounded-[2.5rem] shadow-[0_20px_60px_-15px_rgba(139,66,83,0.1)] border border-white relative overflow-hidden w-full max-w-4xl mx-auto min-h-[500px]">
-        <div className="absolute top-0 left-0 w-full h-2 bg-gray-100">
-          <div 
-            className="h-full bg-brand-900 transition-all duration-500 ease-out"
-            style={{ width: `${(currentStep / 8) * 100}%` }}
-          ></div>
-        </div>
-        <div className="mt-4">
-          {renderStep()}
-        </div>
+    <div className="w-full max-w-4xl mx-auto bg-transparent sm:bg-white/80 sm:backdrop-blur-xl px-3 py-6 sm:p-10 md:p-14 rounded-none sm:rounded-[2.5rem] shadow-none sm:shadow-[0_20px_60px_-15px_rgba(139,66,83,0.1)] border-0 sm:border border-white relative min-h-screen sm:min-h-[500px] flex flex-col justify-start sm:justify-center">
+      <div className="fixed sm:absolute top-0 left-0 w-full h-1.5 sm:h-2 bg-gray-200/80 sm:bg-gray-100 z-50">
+        <div 
+          className="h-full bg-brand-900 transition-all duration-500 ease-out"
+          style={{ width: `${(currentStep / 8) * 100}%` }}
+        ></div>
+      </div>
+      <div className="w-full mt-2 sm:mt-4">
+        {renderStep()}
       </div>
     </div>
   );

@@ -85,15 +85,15 @@ export function ForgotPasswordForm() {
   };
 
   return (
-    <div data-reveal="up" className="bg-white p-10 rounded-[2rem] shadow-xl shadow-brand-900/5 relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-full h-2 bg-brand-900"></div>
+    <div data-reveal="up" className="w-full max-w-[440px] bg-white p-5 sm:p-10 rounded-2xl sm:rounded-[2rem] shadow-xl shadow-brand-900/5 relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-full h-1.5 sm:h-2 bg-brand-900"></div>
       
-      <div className="text-center mb-8" data-reveal="fade">
-        <h1 className="text-brand-900 font-serif font-bold text-lg mb-2">NIRA</h1>
-        <h2 className="text-2xl font-serif text-gray-900 mb-2">
+      <div className="text-center mb-6 sm:mb-8" data-reveal="fade">
+        <h1 className="text-brand-900 font-serif font-bold text-base sm:text-lg mb-1 sm:mb-2">NIRA</h1>
+        <h2 className="text-xl sm:text-2xl font-serif text-gray-900 mb-1.5 sm:mb-2">
           {step === 1 ? "Forgot Password" : "Reset Password"}
         </h2>
-        <p className="text-sm text-gray-600 max-w-[280px] mx-auto">
+        <p className="text-xs sm:text-sm text-gray-600 max-w-[280px] mx-auto">
           {step === 1 
             ? "Enter your email and we'll send you an OTP."
             : `Enter the OTP sent to ${email} and set a new password.`}
@@ -101,7 +101,7 @@ export function ForgotPasswordForm() {
       </div>
 
       {status === "error" && (
-        <div className="mb-6 p-4 bg-red-50/50 border border-red-100 text-red-600 text-sm rounded-xl text-center">
+        <div className="mb-5 sm:mb-6 p-3.5 sm:p-4 bg-red-50/50 border border-red-100 text-red-600 text-xs sm:text-sm rounded-xl text-center">
           {message}
         </div>
       )}

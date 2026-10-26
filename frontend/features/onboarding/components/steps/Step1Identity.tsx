@@ -7,6 +7,7 @@ import * as z from "zod";
 import gsap from "gsap";
 import { Calendar, Ruler, Weight, Droplet, Heart, Users, Baby, LucideIcon } from "lucide-react";
 import { OnboardingData } from "../../types";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const step1Schema = z.object({
   dob: z.string().min(1, "Date of birth is required").refine(val => {
@@ -62,7 +63,14 @@ export function Step1Identity({ data, onNext, onBack }: Props) {
     defaultValues: { ...data }
   });
 
-  const [currentMaritalStatus, currentChildren] = watch(["maritalStatus", "haveChildren"]);
+  const [currentMaritalStatus, currentChildren, currentHeight, currentWeight, currentBloodGroup, currentChildrenCount] = watch([
+    "maritalStatus",
+    "haveChildren",
+    "height",
+    "weight",
+    "bloodGroup",
+    "numberOfChildren",
+  ]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -79,13 +87,13 @@ export function Step1Identity({ data, onNext, onBack }: Props) {
   };
 
   // Reusable UI Components
-  const inputClasses = "w-full pl-12 pr-4 py-4 bg-white/70 backdrop-blur-sm hover:bg-white border border-gray-200/80 rounded-2xl focus:outline-none focus:ring-4 focus:ring-brand-900/10 focus:border-brand-900/30 transition-all text-gray-800 shadow-sm appearance-none font-medium";
+  const inputClasses = "w-full pl-10 pr-4 sm:pl-12 sm:pr-4 py-3.5 sm:py-4 bg-white/70 backdrop-blur-sm hover:bg-white border border-gray-200/80 rounded-xl sm:rounded-2xl focus:outline-none focus:ring-4 focus:ring-brand-900/10 focus:border-brand-900/30 transition-all text-gray-800 shadow-xs sm:shadow-sm appearance-none font-medium text-sm sm:text-base";
 
   const Field = ({ label, icon: Icon, error, children }: { label: string, icon: LucideIcon, error?: string, children: React.ReactNode }) => (
     <div className="gsap-item">
-      <label className="block text-sm font-semibold text-gray-700 mb-2 ml-1">{label}</label>
+      <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2 ml-1">{label}</label>
       <div className="relative">
-        <Icon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-900/60 pointer-events-none z-10" />
+        <Icon className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 sm:w-5 sm:h-5 text-brand-900/60 pointer-events-none z-10" />
         {children}
       </div>
       {error && <p className="mt-2 ml-1 text-xs text-red-500 font-medium">{error}</p>}
@@ -93,17 +101,17 @@ export function Step1Identity({ data, onNext, onBack }: Props) {
   );
 
   const SelectionGroup = ({ label, options, currentValue, onChange, error, icon: Icon }: any) => (
-    <div className="gsap-item bg-white/40 backdrop-blur-sm p-6 rounded-3xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)]">
-      <label className="block text-sm font-semibold text-gray-700 mb-4 ml-1 flex items-center gap-2">
+    <div className="gsap-item bg-white sm:bg-white/40 backdrop-blur-sm p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-gray-100 sm:border-white/60 shadow-xs sm:shadow-[0_8px_30px_rgb(0,0,0,0.02)]">
+      <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-3 sm:mb-4 ml-1 flex items-center gap-2">
         {Icon && <Icon className="w-4 h-4 text-brand-900" />} {label}
       </label>
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-2 sm:gap-3">
         {options.map((opt: string) => (
           <button
             key={opt}
             type="button"
             onClick={() => onChange(opt)}
-            className={`px-6 py-3.5 rounded-2xl text-sm font-semibold transition-all duration-300 border ${
+            className={`px-4 py-2.5 sm:px-6 sm:py-3.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-semibold transition-all duration-300 border ${
               currentValue === opt 
                 ? "bg-brand-900 text-white border-brand-900 shadow-md shadow-brand-900/20 transform scale-[1.02]" 
                 : "bg-white text-gray-600 border-gray-200 hover:border-brand-900/40 hover:bg-brand-50/50"
@@ -118,41 +126,53 @@ export function Step1Identity({ data, onNext, onBack }: Props) {
   );
 
   return (
-    <form ref={containerRef} onSubmit={handleSubmit(onSubmit)} className="space-y-8 max-w-3xl mx-auto px-2">
-      <div className="text-center mb-10 gsap-item">
-        <div className="w-16 h-16 bg-brand-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-brand-100">
-          <Heart className="w-8 h-8 text-brand-900" />
+    <form ref={containerRef} onSubmit={handleSubmit(onSubmit)} className="space-y-6 sm:space-y-8 max-w-3xl mx-auto px-0 sm:px-2 pb-10">
+      <div className="text-center mb-8 sm:mb-10 gsap-item">
+        <div className="w-14 h-14 sm:w-16 sm:h-16 bg-brand-50 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 border border-brand-100">
+          <Heart className="w-7 h-7 sm:w-8 sm:h-8 text-brand-900" />
         </div>
-        <h2 className="text-3xl font-serif text-brand-900 mb-2">Let's start with the basics</h2>
-        <p className="text-base text-gray-500">Tell us a bit about yourself.</p>
+        <h2 className="text-2xl sm:text-3xl font-serif text-brand-900 mb-1.5 sm:mb-2">Let's start with the basics</h2>
+        <p className="text-sm sm:text-base text-gray-500">Tell us a bit about yourself.</p>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <Field label="Date of Birth" icon={Calendar} error={errors.dob?.message}>
           <input type="date" max={maxDate} {...register("dob")} className={inputClasses} />
         </Field>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           <Field label="Height" icon={Ruler} error={errors.height?.message}>
-            <select {...register("height")} className={inputClasses}>
-              <option value="">Select Height</option>
-              {heights.map(h => <option key={h} value={h}>{h}</option>)}
-            </select>
+            <CustomSelect
+              value={currentHeight || ""}
+              onChange={(val) => setValue("height", val, { shouldValidate: true })}
+              options={heights}
+              placeholder="Select Height"
+              className={inputClasses}
+            />
+            <input type="hidden" {...register("height")} />
           </Field>
 
           <Field label="Weight" icon={Weight} error={errors.weight?.message}>
-            <select {...register("weight")} className={inputClasses}>
-              <option value="">Select Weight</option>
-              {weights.map(w => <option key={w} value={w}>{w}</option>)}
-            </select>
+            <CustomSelect
+              value={currentWeight || ""}
+              onChange={(val) => setValue("weight", val, { shouldValidate: true })}
+              options={weights}
+              placeholder="Select Weight"
+              className={inputClasses}
+            />
+            <input type="hidden" {...register("weight")} />
           </Field>
         </div>
 
         <Field label="Blood Group" icon={Droplet} error={errors.bloodGroup?.message}>
-          <select {...register("bloodGroup")} className={inputClasses}>
-            <option value="">Select Blood Group</option>
-            {bloodGroups.map(b => <option key={b} value={b}>{b}</option>)}
-          </select>
+          <CustomSelect
+            value={currentBloodGroup || ""}
+            onChange={(val) => setValue("bloodGroup", val, { shouldValidate: true })}
+            options={bloodGroups}
+            placeholder="Select Blood Group"
+            className={inputClasses}
+          />
+          <input type="hidden" {...register("bloodGroup")} />
         </Field>
 
         <SelectionGroup
@@ -168,7 +188,7 @@ export function Step1Identity({ data, onNext, onBack }: Props) {
         />
 
         {currentMaritalStatus && currentMaritalStatus !== "Never Married" && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="space-y-4 sm:space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
             <SelectionGroup
               label="Do you have children?"
               options={childrenOptions}
@@ -179,23 +199,27 @@ export function Step1Identity({ data, onNext, onBack }: Props) {
 
             {currentChildren?.startsWith("Yes") && (
               <Field label="How many children?" icon={Baby} error={errors.numberOfChildren?.message}>
-                <select {...register("numberOfChildren")} className={inputClasses}>
-                  <option value="">Select number</option>
-                  {["1", "2", "3", "4", "5+"].map(n => <option key={n} value={n}>{n}</option>)}
-                </select>
+                <CustomSelect
+                  value={currentChildrenCount || ""}
+                  onChange={(val) => setValue("numberOfChildren", val, { shouldValidate: true })}
+                  options={["1", "2", "3", "4", "5+"]}
+                  placeholder="Select number"
+                  className={inputClasses}
+                />
+                <input type="hidden" {...register("numberOfChildren")} />
               </Field>
             )}
           </div>
         )}
       </div>
 
-      <div className="flex gap-4 pt-10 gsap-item">
+      <div className="flex gap-3 sm:gap-4 pt-6 sm:pt-10 gsap-item">
         {onBack && (
-          <button type="button" onClick={onBack} className="w-1/3 py-4 px-4 rounded-full text-sm font-semibold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 transition-all shadow-sm">
+          <button type="button" onClick={onBack} className="w-1/3 py-3.5 sm:py-4 px-3 sm:px-4 rounded-full text-xs sm:text-sm font-semibold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 transition-all shadow-sm">
             Back
           </button>
         )}
-        <button type="submit" className="flex-1 py-4 px-4 rounded-full text-sm font-semibold text-white bg-brand-900 hover:bg-brand-800 transition-all shadow-md shadow-brand-900/20 transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
+        <button type="submit" className="flex-1 py-3.5 sm:py-4 px-4 rounded-full text-xs sm:text-sm font-semibold text-white bg-brand-900 hover:bg-brand-800 transition-all shadow-md shadow-brand-900/20 transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
           Continue
         </button>
       </div>

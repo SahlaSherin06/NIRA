@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useSession } from "@/features/auth/auth.queries";
 import { LoginForm } from "@/features/auth/components/LoginForm";
 
+import { AuthLayout } from "@/features/auth/components/AuthLayout";
+
 /**
  * Component: Page
  * Renders the UI and handles the internal logic for the Page.
@@ -37,5 +39,9 @@ export default function Page() {
     );
   }
 
-  return <LoginForm />;
+  return (
+    <AuthLayout>
+      <LoginForm />
+    </AuthLayout>
+  );
 }

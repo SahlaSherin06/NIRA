@@ -7,6 +7,7 @@ import * as z from "zod";
 import gsap from "gsap";
 import { GraduationCap, Briefcase, Wallet, Edit3, X } from "lucide-react";
 import { OnboardingData } from "../../types";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 
 const step3Schema = z.object({
   educationLevel: z.string().min(1, "Education level is required"),
@@ -73,6 +74,7 @@ export function Step3Education({ data, onNext, onBack }: Props) {
 
   const wEducation = watch("educationLevel");
   const wProfession = watch("profession");
+  const wAnnualIncome = watch("annualIncome");
 
   useEffect(() => {
     if (containerRef.current) {
@@ -104,31 +106,35 @@ export function Step3Education({ data, onNext, onBack }: Props) {
     e.currentTarget.value = e.currentTarget.value.replace(/[^a-zA-Z\s]/g, '');
   };
 
-  const inputClasses = "w-full pl-12 pr-10 py-4 bg-white/70 backdrop-blur-sm hover:bg-white border border-gray-200/80 rounded-2xl focus:outline-none focus:ring-4 focus:ring-brand-900/10 focus:border-brand-900/30 transition-all text-gray-800 shadow-sm appearance-none font-medium";
-  const labelClasses = "block text-sm font-semibold text-gray-700 mb-2 ml-1";
-  const iconClasses = "absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-900/60 pointer-events-none z-10";
+  const inputClasses = "w-full pl-10 pr-8 sm:pl-12 sm:pr-10 py-3.5 sm:py-4 bg-white/70 backdrop-blur-sm hover:bg-white border border-gray-200/80 rounded-xl sm:rounded-2xl focus:outline-none focus:ring-4 focus:ring-brand-900/10 focus:border-brand-900/30 transition-all text-gray-800 shadow-xs sm:shadow-sm appearance-none font-medium text-sm sm:text-base";
+  const labelClasses = "block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2 ml-1";
+  const iconClasses = "absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 sm:w-5 sm:h-5 text-brand-900/60 pointer-events-none z-10";
 
   return (
-    <form ref={containerRef} onSubmit={handleSubmit(onSubmit)} className="space-y-8 max-w-3xl mx-auto px-2 pb-10">
-      <div className="text-center mb-10 gsap-item">
-        <div className="w-16 h-16 bg-brand-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-brand-100">
-          <GraduationCap className="w-8 h-8 text-brand-900" />
+    <form ref={containerRef} onSubmit={handleSubmit(onSubmit)} className="space-y-6 sm:space-y-8 max-w-3xl mx-auto px-0 sm:px-2 pb-10">
+      <div className="text-center mb-8 sm:mb-10 gsap-item">
+        <div className="w-14 h-14 sm:w-16 sm:h-16 bg-brand-50 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 border border-brand-100">
+          <GraduationCap className="w-7 h-7 sm:w-8 sm:h-8 text-brand-900" />
         </div>
-        <h2 className="text-3xl font-serif text-brand-900 mb-2">Education & Career</h2>
-        <p className="text-base text-gray-500">Tell us about your educational background and profession.</p>
+        <h2 className="text-2xl sm:text-3xl font-serif text-brand-900 mb-1.5 sm:mb-2">Education & Career</h2>
+        <p className="text-sm sm:text-base text-gray-500">Tell us about your educational background and profession.</p>
       </div>
 
-      <div className="space-y-6">
-<div className="bg-white/40 backdrop-blur-sm p-6 sm:p-8 rounded-3xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-6 gsap-item">
+      <div className="space-y-4 sm:space-y-6">
+        <div className="bg-white sm:bg-white/40 backdrop-blur-sm p-4 sm:p-8 rounded-2xl sm:rounded-3xl border border-gray-100 sm:border-white/60 shadow-xs sm:shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-4 sm:space-y-6 gsap-item">
           <div>
             <label className={labelClasses}>Highest Education Level</label>
             {wEducation !== "Other" ? (
               <div className="relative">
                 <GraduationCap className={iconClasses} />
-                <select {...register("educationLevel")} className={inputClasses}>
-                  <option value="">Select Education Level</option>
-                  {educationLevels.map(e => <option key={e} value={e}>{e}</option>)}
-                </select>
+                <CustomSelect
+                  value={wEducation || ""}
+                  onChange={(val) => setValue("educationLevel", val, { shouldValidate: true })}
+                  options={educationLevels}
+                  placeholder="Select Education Level"
+                  className={inputClasses}
+                />
+                <input type="hidden" {...register("educationLevel")} />
                 {errors.educationLevel && <p className="mt-2 ml-1 text-xs text-red-500 font-medium">{errors.educationLevel.message}</p>}
               </div>
             ) : (
@@ -143,17 +149,22 @@ export function Step3Education({ data, onNext, onBack }: Props) {
             )}
           </div>
         </div>
-<div className="bg-white/40 backdrop-blur-sm p-6 sm:p-8 rounded-3xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-6 gsap-item">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <div className="bg-white sm:bg-white/40 backdrop-blur-sm p-4 sm:p-8 rounded-2xl sm:rounded-3xl border border-gray-100 sm:border-white/60 shadow-xs sm:shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-4 sm:space-y-6 gsap-item">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             <div>
               <label className={labelClasses}>Current Profession</label>
               {wProfession !== "Other" ? (
                 <div className="relative">
                   <Briefcase className={iconClasses} />
-                  <select {...register("profession")} className={inputClasses}>
-                    <option value="">Select Profession</option>
-                    {professions.map(p => <option key={p} value={p}>{p}</option>)}
-                  </select>
+                  <CustomSelect
+                    value={wProfession || ""}
+                    onChange={(val) => setValue("profession", val, { shouldValidate: true })}
+                    options={professions}
+                    placeholder="Select Profession"
+                    className={inputClasses}
+                  />
+                  <input type="hidden" {...register("profession")} />
                   {errors.profession && <p className="mt-2 ml-1 text-xs text-red-500 font-medium">{errors.profession.message}</p>}
                 </div>
               ) : (
@@ -172,10 +183,14 @@ export function Step3Education({ data, onNext, onBack }: Props) {
               <label className={labelClasses}>Annual Income</label>
               <div className="relative">
                 <Wallet className={iconClasses} />
-                <select {...register("annualIncome")} className={inputClasses}>
-                  <option value="">Select Annual Income</option>
-                  {incomeRanges.map(i => <option key={i} value={i}>{i}</option>)}
-                </select>
+                <CustomSelect
+                  value={wAnnualIncome || ""}
+                  onChange={(val) => setValue("annualIncome", val, { shouldValidate: true })}
+                  options={incomeRanges}
+                  placeholder="Select Annual Income"
+                  className={inputClasses}
+                />
+                <input type="hidden" {...register("annualIncome")} />
               </div>
               {errors.annualIncome && <p className="mt-2 ml-1 text-xs text-red-500 font-medium">{errors.annualIncome.message}</p>}
             </div>
@@ -184,11 +199,11 @@ export function Step3Education({ data, onNext, onBack }: Props) {
 
       </div>
 
-      <div className="flex gap-4 pt-10 gsap-item">
-        <button type="button" onClick={onBack} className="w-1/3 py-4 px-4 rounded-full text-sm font-semibold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 transition-all shadow-sm">
+      <div className="flex gap-3 sm:gap-4 pt-6 sm:pt-10 gsap-item">
+        <button type="button" onClick={onBack} className="w-1/3 py-3.5 sm:py-4 px-3 sm:px-4 rounded-full text-xs sm:text-sm font-semibold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 transition-all shadow-sm">
           Back
         </button>
-        <button type="submit" className="flex-1 py-4 px-4 rounded-full text-sm font-semibold text-white bg-brand-900 hover:bg-brand-800 transition-all shadow-md shadow-brand-900/20 transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
+        <button type="submit" className="flex-1 py-3.5 sm:py-4 px-4 rounded-full text-xs sm:text-sm font-semibold text-white bg-brand-900 hover:bg-brand-800 transition-all shadow-md shadow-brand-900/20 transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
           Continue
         </button>
       </div>

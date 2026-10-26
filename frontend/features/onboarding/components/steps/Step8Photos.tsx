@@ -112,27 +112,27 @@ export function Step8Photos({ data, onNext, onBack }: Props) {
   };
 
   return (
-    <form ref={containerRef} onSubmit={handleSubmit(onSubmit)} className="space-y-8 max-w-3xl mx-auto px-2 pb-10">
-      <div className="text-center mb-10 gsap-item">
-        <div className="w-16 h-16 bg-brand-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-brand-100">
-          <Camera className="w-8 h-8 text-brand-900" />
+    <form ref={containerRef} onSubmit={handleSubmit(onSubmit)} className="space-y-6 sm:space-y-8 max-w-3xl mx-auto px-0 sm:px-2 pb-10">
+      <div className="text-center mb-8 sm:mb-10 gsap-item">
+        <div className="w-14 h-14 sm:w-16 sm:h-16 bg-brand-50 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 border border-brand-100">
+          <Camera className="w-7 h-7 sm:w-8 sm:h-8 text-brand-900" />
         </div>
-        <h2 className="text-3xl font-serif text-brand-900 mb-2">Photos & Privacy</h2>
-        <p className="text-base text-gray-500">Add your best photos to get more matches.</p>
+        <h2 className="text-2xl sm:text-3xl font-serif text-brand-900 mb-1.5 sm:mb-2">Photos & Privacy</h2>
+        <p className="text-sm sm:text-base text-gray-500">Add your best photos to get more matches.</p>
       </div>
 
-      <div className="space-y-6">
-<div className="bg-white/40 backdrop-blur-sm p-6 sm:p-8 rounded-3xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-5 gsap-item">
-          <div className="flex justify-between items-center mb-2">
-            <label className="block text-sm font-bold text-gray-800 ml-1 flex items-center gap-2">
-              <Camera className="w-5 h-5 text-brand-900" /> Main Profile Photo
+      <div className="space-y-4 sm:space-y-6">
+        <div className="bg-white sm:bg-white/40 backdrop-blur-sm p-4 sm:p-8 rounded-2xl sm:rounded-3xl border border-gray-100 sm:border-white/60 shadow-xs sm:shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-4 sm:space-y-5 gsap-item">
+          <div className="flex justify-between items-center mb-1 sm:mb-2">
+            <label className="block text-xs sm:text-sm font-bold text-gray-800 ml-1 flex items-center gap-2">
+              <Camera className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-brand-900" /> Main Profile Photo
             </label>
-            <span className="text-xs font-semibold bg-red-100 text-red-600 px-2 py-1 rounded-md">Required</span>
+            <span className="text-[11px] sm:text-xs font-semibold bg-red-100 text-red-600 px-2 py-0.5 sm:py-1 rounded-md">Required</span>
           </div>
 
           <div 
             onClick={() => !wMainPhoto && mainPhotoInputRef.current?.click()}
-            className={`relative w-full h-64 sm:h-80 rounded-2xl flex flex-col items-center justify-center border-2 overflow-hidden transition-all ${
+            className={`relative w-full h-56 sm:h-80 rounded-xl sm:rounded-2xl flex flex-col items-center justify-center border-2 overflow-hidden transition-all ${
               wMainPhoto ? 'border-brand-900/30 shadow-md' : 'border-dashed border-gray-300 hover:border-brand-900/50 hover:bg-white/50 cursor-pointer'
             }`}
           >
@@ -142,16 +142,16 @@ export function Step8Photos({ data, onNext, onBack }: Props) {
                 <button 
                   type="button"
                   onClick={() => setValue("mainPhoto", "", { shouldValidate: true })}
-                  className="absolute top-4 right-4 bg-white/80 backdrop-blur-md p-2 rounded-full text-gray-700 hover:text-red-500 hover:bg-white transition-all shadow-sm"
+                  className="absolute top-3 right-3 sm:top-4 sm:right-4 bg-white/80 backdrop-blur-md p-1.5 sm:p-2 rounded-full text-gray-700 hover:text-red-500 hover:bg-white transition-all shadow-sm"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
               </>
             ) : (
-              <div className="text-center p-6">
-                <ImagePlus className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-sm font-semibold text-gray-600">Tap to upload your main photo</p>
-                <p className="text-xs text-gray-400 mt-1">JPEG, PNG up to 5MB</p>
+              <div className="text-center p-4 sm:p-6">
+                <ImagePlus className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-2 sm:mb-3" />
+                <p className="text-xs sm:text-sm font-semibold text-gray-600">Tap to upload your main photo</p>
+                <p className="text-[11px] sm:text-xs text-gray-400 mt-1">JPEG, PNG up to 5MB</p>
               </div>
             )}
             <input 
@@ -164,25 +164,26 @@ export function Step8Photos({ data, onNext, onBack }: Props) {
           </div>
           {errors.mainPhoto && <p className="mt-2 ml-1 text-xs text-red-500 font-medium">{errors.mainPhoto.message}</p>}
         </div>
-<div className="bg-white/40 backdrop-blur-sm p-6 sm:p-8 rounded-3xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-5 gsap-item">
-          <div className="flex justify-between items-center mb-2">
-            <label className="block text-sm font-bold text-gray-800 ml-1 flex items-center gap-2">
-              <ImagePlus className="w-5 h-5 text-brand-900" /> Gallery Photos
-            </label>
-            <span className="text-xs font-semibold text-gray-500">{wGalleryPhotos.length}/4</span>
-          </div>
-          <p className="text-xs text-gray-500 ml-1 mb-4">Adding more photos increases your chances of getting noticed.</p>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="bg-white sm:bg-white/40 backdrop-blur-sm p-4 sm:p-8 rounded-2xl sm:rounded-3xl border border-gray-100 sm:border-white/60 shadow-xs sm:shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-4 sm:space-y-5 gsap-item">
+          <div className="flex justify-between items-center mb-1 sm:mb-2">
+            <label className="block text-xs sm:text-sm font-bold text-gray-800 ml-1 flex items-center gap-2">
+              <ImagePlus className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-brand-900" /> Gallery Photos
+            </label>
+            <span className="text-[11px] sm:text-xs font-semibold text-gray-500">{wGalleryPhotos.length}/4</span>
+          </div>
+          <p className="text-[11px] sm:text-xs text-gray-500 ml-1 mb-3 sm:mb-4">Adding more photos increases your chances of getting noticed.</p>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
             {wGalleryPhotos.map((url, idx) => (
               <div key={idx} className="relative aspect-[3/4] rounded-xl overflow-hidden border border-gray-200 shadow-sm group">
                 <img src={url} alt={`Gallery ${idx}`} className="w-full h-full object-cover" />
                 <button 
                   type="button"
                   onClick={() => removeGalleryPhoto(idx)}
-                  className="absolute top-2 right-2 bg-black/50 p-1.5 rounded-full text-white opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500"
+                  className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 bg-black/60 p-1 sm:p-1.5 rounded-full text-white opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-all hover:bg-red-500"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </button>
               </div>
             ))}
@@ -192,8 +193,8 @@ export function Step8Photos({ data, onNext, onBack }: Props) {
                 onClick={() => galleryInputRef.current?.click()}
                 className="aspect-[3/4] rounded-xl border-2 border-dashed border-gray-300 hover:border-brand-900/50 hover:bg-white/50 cursor-pointer flex flex-col items-center justify-center text-gray-400 transition-all"
               >
-                <ImagePlus className="w-6 h-6 mb-2" />
-                <span className="text-xs font-medium">Add Photo</span>
+                <ImagePlus className="w-5 h-5 sm:w-6 sm:h-6 mb-1 sm:mb-2" />
+                <span className="text-[11px] sm:text-xs font-medium">Add Photo</span>
               </div>
             )}
             
@@ -207,13 +208,14 @@ export function Step8Photos({ data, onNext, onBack }: Props) {
             />
           </div>
         </div>
-<div className="bg-white/40 backdrop-blur-sm p-6 sm:p-8 rounded-3xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-5 gsap-item">
-          <label className="block text-sm font-bold text-gray-800 mb-2 ml-1 flex items-center gap-2">
-            <Shield className="w-5 h-5 text-brand-900" /> Photo Privacy Settings
-          </label>
-          <p className="text-xs text-gray-500 ml-1 mb-4">You have full control over who sees your photos.</p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="bg-white sm:bg-white/40 backdrop-blur-sm p-4 sm:p-8 rounded-2xl sm:rounded-3xl border border-gray-100 sm:border-white/60 shadow-xs sm:shadow-[0_8px_30px_rgb(0,0,0,0.02)] space-y-4 sm:space-y-5 gsap-item">
+          <label className="block text-xs sm:text-sm font-bold text-gray-800 mb-1 sm:mb-2 ml-1 flex items-center gap-2">
+            <Shield className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-brand-900" /> Photo Privacy Settings
+          </label>
+          <p className="text-[11px] sm:text-xs text-gray-500 ml-1 mb-3 sm:mb-4">You have full control over who sees your photos.</p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             {privacyOptions.map((opt) => {
               const Icon = opt.icon;
               const isSelected = wPrivacy === opt.id;
@@ -222,16 +224,16 @@ export function Step8Photos({ data, onNext, onBack }: Props) {
                 <div 
                   key={opt.id}
                   onClick={() => setValue("photoPrivacy", opt.id, { shouldValidate: true })}
-                  className={`p-4 rounded-2xl border-2 cursor-pointer transition-all duration-300 flex flex-col items-center text-center ${
+                  className={`p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border-2 cursor-pointer transition-all duration-300 flex flex-col items-center text-center ${
                     isSelected 
                       ? 'border-brand-900 bg-brand-50/50 shadow-md transform scale-[1.02]' 
                       : 'border-gray-100 bg-white hover:border-brand-900/30'
                   }`}
                 >
-                  <div className={`p-3 rounded-full mb-3 ${isSelected ? 'bg-brand-900 text-white' : 'bg-gray-100 text-gray-500'}`}>
-                    <Icon className="w-5 h-5" />
+                  <div className={`p-2.5 sm:p-3 rounded-full mb-2 sm:mb-3 ${isSelected ? 'bg-brand-900 text-white' : 'bg-gray-100 text-gray-500'}`}>
+                    <Icon className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
                   </div>
-                  <h4 className={`text-sm font-bold mb-1 ${isSelected ? 'text-brand-900' : 'text-gray-700'}`}>{opt.title}</h4>
+                  <h4 className={`text-xs sm:text-sm font-bold mb-1 ${isSelected ? 'text-brand-900' : 'text-gray-700'}`}>{opt.title}</h4>
                   <p className="text-[11px] text-gray-500 leading-relaxed">{opt.desc}</p>
                 </div>
               )
@@ -242,11 +244,11 @@ export function Step8Photos({ data, onNext, onBack }: Props) {
 
       </div>
 
-      <div className="flex gap-4 pt-10 gsap-item">
-        <button type="button" onClick={onBack} className="w-1/3 py-4 px-4 rounded-full text-sm font-semibold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 transition-all shadow-sm">
+      <div className="flex gap-3 sm:gap-4 pt-6 sm:pt-10 gsap-item">
+        <button type="button" onClick={onBack} className="w-1/3 py-3.5 sm:py-4 px-3 sm:px-4 rounded-full text-xs sm:text-sm font-semibold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 transition-all shadow-sm">
           Back
         </button>
-        <button type="submit" className="flex-1 py-4 px-4 rounded-full text-sm font-semibold text-white bg-brand-900 hover:bg-brand-800 transition-all shadow-md shadow-brand-900/20 transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
+        <button type="submit" className="flex-1 py-3.5 sm:py-4 px-4 rounded-full text-xs sm:text-sm font-semibold text-white bg-brand-900 hover:bg-brand-800 transition-all shadow-md shadow-brand-900/20 transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
           Continue
         </button>
       </div>
