@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useForm, UseFormRegisterReturn } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import gsap from "gsap";
@@ -60,19 +60,13 @@ export function Step1Identity({ data, onNext, onBack, onSaveDraft }: Props) {
   const containerRef = useRef<HTMLFormElement>(null);
   const maxDate = new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0];
 
-  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<Step1Values>({
+  const { register, control, handleSubmit, watch, setValue, formState: { errors } } = useForm<Step1Values>({
     resolver: zodResolver(step1Schema),
     defaultValues: { ...data }
   });
 
-  const [currentMaritalStatus, currentChildren, currentHeight, currentWeight, currentBloodGroup, currentChildrenCount] = watch([
-    "maritalStatus",
-    "haveChildren",
-    "height",
-    "weight",
-    "bloodGroup",
-    "numberOfChildren",
-  ]);
+  const currentMaritalStatus = watch("maritalStatus");
+  const currentChildren = watch("haveChildren");
 
   // Auto-save selections to MongoDB draft whenever any value changes
   useEffect(() => {
@@ -160,37 +154,52 @@ export function Step1Identity({ data, onNext, onBack, onSaveDraft }: Props) {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           <Field label="Height" icon={Ruler} error={errors.height?.message}>
-            <CustomSelect
-              value={currentHeight || ""}
-              onChange={(val) => setValue("height", val, { shouldValidate: true })}
-              options={heights}
-              placeholder="Select Height"
-              className={inputClasses}
+            <Controller
+              control={control}
+              name="height"
+              render={({ field }) => (
+                <CustomSelect
+                  value={field.value || ""}
+                  onChange={field.onChange}
+                  options={heights}
+                  placeholder="Select Height"
+                  className={inputClasses}
+                />
+              )}
             />
-            <input type="hidden" {...register("height")} />
           </Field>
 
           <Field label="Weight" icon={Weight} error={errors.weight?.message}>
-            <CustomSelect
-              value={currentWeight || ""}
-              onChange={(val) => setValue("weight", val, { shouldValidate: true })}
-              options={weights}
-              placeholder="Select Weight"
-              className={inputClasses}
+            <Controller
+              control={control}
+              name="weight"
+              render={({ field }) => (
+                <CustomSelect
+                  value={field.value || ""}
+                  onChange={field.onChange}
+                  options={weights}
+                  placeholder="Select Weight"
+                  className={inputClasses}
+                />
+              )}
             />
-            <input type="hidden" {...register("weight")} />
           </Field>
         </div>
 
         <Field label="Blood Group" icon={Droplet} error={errors.bloodGroup?.message}>
-          <CustomSelect
-            value={currentBloodGroup || ""}
-            onChange={(val) => setValue("bloodGroup", val, { shouldValidate: true })}
-            options={bloodGroups}
-            placeholder="Select Blood Group"
-            className={inputClasses}
+          <Controller
+            control={control}
+            name="bloodGroup"
+            render={({ field }) => (
+              <CustomSelect
+                value={field.value || ""}
+                onChange={field.onChange}
+                options={bloodGroups}
+                placeholder="Select Blood Group"
+                className={inputClasses}
+              />
+            )}
           />
-          <input type="hidden" {...register("bloodGroup")} />
         </Field>
 
         <SelectionGroup
@@ -217,14 +226,19 @@ export function Step1Identity({ data, onNext, onBack, onSaveDraft }: Props) {
 
             {currentChildren?.startsWith("Yes") && (
               <Field label="How many children?" icon={Baby} error={errors.numberOfChildren?.message}>
-                <CustomSelect
-                  value={currentChildrenCount || ""}
-                  onChange={(val) => setValue("numberOfChildren", val, { shouldValidate: true })}
-                  options={["1", "2", "3", "4", "5+"]}
-                  placeholder="Select number"
-                  className={inputClasses}
+                <Controller
+                  control={control}
+                  name="numberOfChildren"
+                  render={({ field }) => (
+                    <CustomSelect
+                      value={field.value || ""}
+                      onChange={field.onChange}
+                      options={["1", "2", "3", "4", "5+"]}
+                      placeholder="Select number"
+                      className={inputClasses}
+                    />
+                  )}
                 />
-                <input type="hidden" {...register("numberOfChildren")} />
               </Field>
             )}
           </div>

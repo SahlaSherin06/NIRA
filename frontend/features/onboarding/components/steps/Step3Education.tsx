@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import gsap from "gsap";
@@ -61,7 +61,7 @@ interface Props {
 export function Step3Education({ data, onNext, onBack, onSaveDraft }: Props) {
   const containerRef = useRef<HTMLFormElement>(null);
 
-  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<Step3Values>({
+  const { register, control, handleSubmit, watch, setValue, formState: { errors } } = useForm<Step3Values>({
     resolver: zodResolver(step3Schema),
     defaultValues: {
       educationLevel: educationLevels.includes(data.educationLevel || "") ? data.educationLevel : (data.educationLevel ? "Other" : ""),
@@ -143,14 +143,19 @@ export function Step3Education({ data, onNext, onBack, onSaveDraft }: Props) {
             {wEducation !== "Other" ? (
               <div className="relative">
                 <GraduationCap className={iconClasses} />
-                <CustomSelect
-                  value={wEducation || ""}
-                  onChange={(val) => setValue("educationLevel", val, { shouldValidate: true })}
-                  options={educationLevels}
-                  placeholder="Select Education Level"
-                  className={inputClasses}
+                <Controller
+                  control={control}
+                  name="educationLevel"
+                  render={({ field }) => (
+                    <CustomSelect
+                      value={field.value || ""}
+                      onChange={field.onChange}
+                      options={educationLevels}
+                      placeholder="Select Education Level"
+                      className={inputClasses}
+                    />
+                  )}
                 />
-                <input type="hidden" {...register("educationLevel")} />
                 {errors.educationLevel && <p className="mt-2 ml-1 text-xs text-red-500 font-medium">{errors.educationLevel.message}</p>}
               </div>
             ) : (
@@ -173,14 +178,19 @@ export function Step3Education({ data, onNext, onBack, onSaveDraft }: Props) {
               {wProfession !== "Other" ? (
                 <div className="relative">
                   <Briefcase className={iconClasses} />
-                  <CustomSelect
-                    value={wProfession || ""}
-                    onChange={(val) => setValue("profession", val, { shouldValidate: true })}
-                    options={professions}
-                    placeholder="Select Profession"
-                    className={inputClasses}
+                  <Controller
+                    control={control}
+                    name="profession"
+                    render={({ field }) => (
+                      <CustomSelect
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        options={professions}
+                        placeholder="Select Profession"
+                        className={inputClasses}
+                      />
+                    )}
                   />
-                  <input type="hidden" {...register("profession")} />
                   {errors.profession && <p className="mt-2 ml-1 text-xs text-red-500 font-medium">{errors.profession.message}</p>}
                 </div>
               ) : (
@@ -199,14 +209,19 @@ export function Step3Education({ data, onNext, onBack, onSaveDraft }: Props) {
               <label className={labelClasses}>Annual Income</label>
               <div className="relative">
                 <Wallet className={iconClasses} />
-                <CustomSelect
-                  value={wAnnualIncome || ""}
-                  onChange={(val) => setValue("annualIncome", val, { shouldValidate: true })}
-                  options={incomeRanges}
-                  placeholder="Select Annual Income"
-                  className={inputClasses}
+                <Controller
+                  control={control}
+                  name="annualIncome"
+                  render={({ field }) => (
+                    <CustomSelect
+                      value={field.value || ""}
+                      onChange={field.onChange}
+                      options={incomeRanges}
+                      placeholder="Select Annual Income"
+                      className={inputClasses}
+                    />
+                  )}
                 />
-                <input type="hidden" {...register("annualIncome")} />
               </div>
               {errors.annualIncome && <p className="mt-2 ml-1 text-xs text-red-500 font-medium">{errors.annualIncome.message}</p>}
             </div>

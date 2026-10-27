@@ -19,7 +19,7 @@ interface CustomSelectProps {
  * - On Mobile (screen < 640px): Opens a Bottom Sheet Modal via React Portal directly into document.body with z-[9999],
  *   completely bypassing any CSS stacking context or card overflow clipping.
  * - On Desktop (screen >= 640px): Opens a smooth dropdown menu below the trigger.
- * - No upfront text search input: pure selectable options list. Custom typing is only shown when the user explicitly selects "Other".
+ * - Pure selectable options list: no upfront text search box.
  */
 export function CustomSelect({
   value,
@@ -32,6 +32,7 @@ export function CustomSelect({
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -40,10 +41,14 @@ export function CustomSelect({
   // Close desktop dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
+      const target = event.target as Node;
+      // Do not close if click was inside container or inside mobile sheet
+      if (containerRef.current?.contains(target)) return;
+      if (sheetRef.current?.contains(target)) return;
+
+      setIsOpen(false);
     }
+
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
@@ -54,7 +59,7 @@ export function CustomSelect({
 
   // Lock mobile body scroll when bottom sheet is open
   useEffect(() => {
-    if (isOpen && window.innerWidth < 640) {
+    if (isOpen && typeof window !== "undefined" && window.innerWidth < 640) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -75,7 +80,7 @@ export function CustomSelect({
       <button
         type="button"
         disabled={disabled}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => setIsOpen((prev) => !prev)}
         className={`w-full text-left flex items-center justify-between cursor-pointer select-none transition-all ${className} ${
           disabled ? "opacity-50 cursor-not-allowed" : ""
         } ${isOpen ? "ring-4 ring-brand-900/10 border-brand-900/40" : ""}`}
@@ -131,7 +136,11 @@ export function CustomSelect({
             />
 
             {/* Bottom Drawer Sheet */}
-            <div className="relative z-10 w-full max-h-[80vh] bg-white rounded-t-[2rem] shadow-2xl p-5 pb-8 flex flex-col animate-in slide-in-from-bottom duration-300">
+            <div
+              ref={sheetRef}
+              onClick={(e) => e.stopPropagation()}
+              className="relative z-10 w-full max-h-[80vh] bg-white rounded-t-[2rem] shadow-2xl p-5 pb-8 flex flex-col animate-in slide-in-from-bottom duration-300"
+            >
               {/* Top Handle Pill */}
               <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-3.5 shrink-0" />
 

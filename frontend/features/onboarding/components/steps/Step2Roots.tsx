@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import gsap from "gsap";
@@ -82,7 +82,7 @@ interface Props {
 export function Step2Roots({ data, onNext, onBack, onSaveDraft }: Props) {
   const containerRef = useRef<HTMLFormElement>(null);
 
-  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<Step2Values>({
+  const { register, control, handleSubmit, watch, setValue, formState: { errors } } = useForm<Step2Values>({
     resolver: zodResolver(step2Schema),
     defaultValues: {
       nationality: countries.includes(data.nationality || "") ? data.nationality : (data.nationality ? "Other" : ""),
@@ -200,14 +200,19 @@ export function Step2Roots({ data, onNext, onBack, onSaveDraft }: Props) {
               {wNationality !== "Other" ? (
                 <div className="relative">
                   <Globe className={iconClasses} />
-                  <CustomSelect
-                    value={wNationality || ""}
-                    onChange={(val) => setValue("nationality", val, { shouldValidate: true })}
-                    options={countries}
-                    placeholder="Select Nationality"
-                    className={inputClasses}
+                  <Controller
+                    control={control}
+                    name="nationality"
+                    render={({ field }) => (
+                      <CustomSelect
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        options={countries}
+                        placeholder="Select Nationality"
+                        className={inputClasses}
+                      />
+                    )}
                   />
-                  <input type="hidden" {...register("nationality")} />
                   {errors.nationality && <p className="mt-2 ml-1 text-xs text-red-500 font-medium">{errors.nationality.message}</p>}
                 </div>
               ) : (
@@ -227,14 +232,19 @@ export function Step2Roots({ data, onNext, onBack, onSaveDraft }: Props) {
               {wGrewUpIn !== "Other" ? (
                 <div className="relative">
                   <MapPin className={iconClasses} />
-                  <CustomSelect
-                    value={wGrewUpIn || ""}
-                    onChange={(val) => setValue("grewUpIn", val, { shouldValidate: true })}
-                    options={countries}
-                    placeholder="Select Country"
-                    className={inputClasses}
+                  <Controller
+                    control={control}
+                    name="grewUpIn"
+                    render={({ field }) => (
+                      <CustomSelect
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        options={countries}
+                        placeholder="Select Country"
+                        className={inputClasses}
+                      />
+                    )}
                   />
-                  <input type="hidden" {...register("grewUpIn")} />
                   {errors.grewUpIn && <p className="mt-2 ml-1 text-xs text-red-500 font-medium">{errors.grewUpIn.message}</p>}
                 </div>
               ) : (
@@ -261,14 +271,19 @@ export function Step2Roots({ data, onNext, onBack, onSaveDraft }: Props) {
             {wCountry !== "Other" ? (
               <div className="relative">
                 <Globe className={iconClasses} />
-                <CustomSelect
-                  value={wCountry || ""}
-                  onChange={(val) => setValue("country", val, { shouldValidate: true })}
-                  options={countries}
-                  placeholder="Select Country"
-                  className={inputClasses}
+                <Controller
+                  control={control}
+                  name="country"
+                  render={({ field }) => (
+                    <CustomSelect
+                      value={field.value || ""}
+                      onChange={field.onChange}
+                      options={countries}
+                      placeholder="Select Country"
+                      className={inputClasses}
+                    />
+                  )}
                 />
-                <input type="hidden" {...register("country")} />
                 {errors.country && <p className="mt-2 ml-1 text-xs text-red-500 font-medium">{errors.country.message}</p>}
               </div>
             ) : (
@@ -315,14 +330,19 @@ export function Step2Roots({ data, onNext, onBack, onSaveDraft }: Props) {
               {wReligion !== "Other" ? (
                 <div className="relative">
                   <Book className={iconClasses} />
-                  <CustomSelect
-                    value={wReligion || ""}
-                    onChange={(val) => setValue("religion", val, { shouldValidate: true })}
-                    options={religions}
-                    placeholder="Select Religion"
-                    className={inputClasses}
+                  <Controller
+                    control={control}
+                    name="religion"
+                    render={({ field }) => (
+                      <CustomSelect
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        options={religions}
+                        placeholder="Select Religion"
+                        className={inputClasses}
+                      />
+                    )}
                   />
-                  <input type="hidden" {...register("religion")} />
                   {errors.religion && <p className="mt-2 ml-1 text-xs text-red-500 font-medium">{errors.religion.message}</p>}
                 </div>
               ) : (
@@ -350,14 +370,19 @@ export function Step2Roots({ data, onNext, onBack, onSaveDraft }: Props) {
               {wEthnicity !== "Other" ? (
                 <div className="relative">
                   <Globe className={iconClasses} />
-                  <CustomSelect
-                    value={wEthnicity || ""}
-                    onChange={(val) => setValue("ethnicity", val, { shouldValidate: true })}
-                    options={ethnicities}
-                    placeholder="Select Ethnicity"
-                    className={inputClasses}
+                  <Controller
+                    control={control}
+                    name="ethnicity"
+                    render={({ field }) => (
+                      <CustomSelect
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        options={ethnicities}
+                        placeholder="Select Ethnicity"
+                        className={inputClasses}
+                      />
+                    )}
                   />
-                  <input type="hidden" {...register("ethnicity")} />
                   {errors.ethnicity && <p className="mt-2 ml-1 text-xs text-red-500 font-medium">{errors.ethnicity.message}</p>}
                 </div>
               ) : (
@@ -377,14 +402,19 @@ export function Step2Roots({ data, onNext, onBack, onSaveDraft }: Props) {
               {wMotherTongue !== "Other" ? (
                 <div className="relative">
                   <Languages className={iconClasses} />
-                  <CustomSelect
-                    value={wMotherTongue || ""}
-                    onChange={(val) => setValue("motherTongue", val, { shouldValidate: true })}
-                    options={languages}
-                    placeholder="Select Language"
-                    className={inputClasses}
+                  <Controller
+                    control={control}
+                    name="motherTongue"
+                    render={({ field }) => (
+                      <CustomSelect
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        options={languages}
+                        placeholder="Select Language"
+                        className={inputClasses}
+                      />
+                    )}
                   />
-                  <input type="hidden" {...register("motherTongue")} />
                   {errors.motherTongue && <p className="mt-2 ml-1 text-xs text-red-500 font-medium">{errors.motherTongue.message}</p>}
                 </div>
               ) : (
