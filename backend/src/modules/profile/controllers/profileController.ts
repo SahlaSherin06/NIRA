@@ -6,24 +6,38 @@ import { Preference } from "../models/Preference";
 import { User } from "../../auth/models/User";
 import { uploadToCloudinary } from "../../../config/cloudinary";
 
-// Helper to handle multiple image uploads
+// Helper to handle multiple image uploads in parallel
 const processPhotoUploads = async (mainPhoto: string, galleryPhotos: string[]): Promise<{ main: string, gallery: string[] }> => {
   let finalMainPhoto = mainPhoto;
-  let finalGalleryPhotos = [...(galleryPhotos || [])];
+  const finalGalleryPhotos = [...(galleryPhotos || [])];
+  const uploadTasks: Promise<void>[] = [];
 
-  // If the photo is a base64 string, upload it to Cloudinary
+  // Parallel upload mainPhoto to Cloudinary if base64
   if (mainPhoto && mainPhoto.startsWith("data:image/")) {
-    finalMainPhoto = await uploadToCloudinary(mainPhoto);
+    uploadTasks.push(
+      uploadToCloudinary(mainPhoto)
+        .then((url) => { finalMainPhoto = url; })
+        .catch((err) => {
+          console.error("Cloudinary mainPhoto upload failed:", err);
+          throw new Error("Failed to upload main profile photo");
+        })
+    );
   }
 
-  // Upload any gallery photos that are base64 strings
-  for (let i = 0; i < finalGalleryPhotos.length; i++) {
-    const photo = finalGalleryPhotos[i];
-    if (photo && typeof photo === 'string' && photo.startsWith("data:image/")) {
-      finalGalleryPhotos[i] = await uploadToCloudinary(photo);
+  // Parallel upload gallery photos to Cloudinary if base64
+  finalGalleryPhotos.forEach((photo, idx) => {
+    if (photo && typeof photo === "string" && photo.startsWith("data:image/")) {
+      uploadTasks.push(
+        uploadToCloudinary(photo)
+          .then((url) => { finalGalleryPhotos[idx] = url; })
+          .catch((err) => {
+            console.error(`Cloudinary gallery photo ${idx} upload failed:`, err);
+          })
+      );
     }
-  }
+  });
 
+  await Promise.all(uploadTasks);
   return { main: finalMainPhoto, gallery: finalGalleryPhotos };
 };
 

@@ -127,9 +127,10 @@ export function OnboardingWizard() {
         localStorage.removeItem(DRAFT_KEY);
         // Redirect to home
         router.replace("/home");
-      } catch (error) {
+      } catch (error: any) {
         console.error("Failed to submit profile", error);
-        alert("Failed to submit profile. Please try again.");
+        const errorMsg = error?.response?.data?.message || error?.message || "Failed to submit profile. Please try again.";
+        alert(errorMsg);
       } finally {
         setIsSubmitting(false);
       }

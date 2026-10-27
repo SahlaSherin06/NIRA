@@ -78,41 +78,102 @@ export function Step8Photos({ data, onNext, onBack, onSaveDraft }: Props) {
     }
   }, []);
 
+  /**
+   * Compresses an image file on the client before storing/uploading.
+   * Reduces 10MB+ phone camera images down to ~150KB-250KB JPEG while keeping crisp HD quality.
+   */
+  const compressImageFile = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      if (!file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+        return;
+      }
+
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      img.src = objectUrl;
+
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        const MAX_WIDTH = 1200;
+        const MAX_HEIGHT = 1200;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height = Math.round((height * MAX_WIDTH) / width);
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width = Math.round((width * MAX_HEIGHT) / height);
+            height = MAX_HEIGHT;
+          }
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(file);
+          return;
+        }
+
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // High quality JPEG compressed to ~150KB-250KB
+        const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.8);
+        resolve(compressedDataUrl);
+      };
+
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      };
+    });
+  };
+
   const onSubmit = (values: Step8Values) => {
-    // Note: In production, we would upload these File blobs to Cloudinary here 
-    // or pass them to the final Step 9 to submit to the backend.
     onNext({ ...data, ...values });
   };
 
-  const handleMainPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMainPhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setValue("mainPhoto", reader.result as string, { shouldValidate: true });
-      };
-      reader.readAsDataURL(file);
+      try {
+        const compressedBase64 = await compressImageFile(file);
+        setValue("mainPhoto", compressedBase64, { shouldValidate: true });
+      } catch (err) {
+        console.error("Error reading main photo:", err);
+      }
     }
   };
 
-  const handleGalleryPhotosChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleGalleryPhotosChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
       const currentGallery = [...wGalleryPhotos];
       const remainingSlots = 4 - currentGallery.length;
       const filesToAdd = Array.from(files).slice(0, remainingSlots);
-      
-      const readers = filesToAdd.map(file => {
-        return new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(file);
-        });
-      });
 
-      Promise.all(readers).then(newBase64s => {
+      try {
+        const compressedPromises = filesToAdd.map((file) => compressImageFile(file));
+        const newBase64s = await Promise.all(compressedPromises);
         setValue("galleryPhotos", [...currentGallery, ...newBase64s], { shouldValidate: true });
-      });
+      } catch (err) {
+        console.error("Error reading gallery photos:", err);
+      }
     }
   };
 
