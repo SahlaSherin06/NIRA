@@ -15,7 +15,7 @@ interface AdminUsersTableProps {
   isLoading: boolean;
   onViewProfile: (user: AdminUser) => void;
   onToggleBan: (id: string) => void;
-  isBanPending: boolean;
+  pendingUserId?: string;
 }
 
 export function AdminUsersTable({
@@ -23,7 +23,7 @@ export function AdminUsersTable({
   isLoading,
   onViewProfile,
   onToggleBan,
-  isBanPending,
+  pendingUserId,
 }: AdminUsersTableProps) {
   if (isLoading) {
     return (
@@ -166,19 +166,25 @@ export function AdminUsersTable({
                     )}
                   </td>
 
-                  {/* 6. Actions (Only Suspend/Unban, View Biodata removed as requested) */}
+                  {/* 6. Actions (Only Suspend/Unban) */}
                   <td className="py-3.5 px-4 sm:px-6 text-right whitespace-nowrap">
-                    <button
-                      onClick={() => onToggleBan(user._id)}
-                      disabled={isBanPending}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer ${
-                        user.isBanned
-                          ? "bg-emerald-600 text-white hover:bg-emerald-700"
-                          : "bg-red-50 text-red-700 hover:bg-red-100 border border-red-200"
-                      }`}
-                    >
-                      {user.isBanned ? "Unban" : "Suspend"}
-                    </button>
+                    {(() => {
+                      const isThisUserPending = pendingUserId === user._id;
+                      return (
+                        <button
+                          onClick={() => onToggleBan(user._id)}
+                          disabled={isThisUserPending}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-150 inline-flex items-center gap-1.5 disabled:opacity-60 cursor-pointer ${
+                            user.isBanned
+                              ? "bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95"
+                              : "bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 active:scale-95"
+                          }`}
+                        >
+                          {isThisUserPending && <Loader2 className="w-3 h-3 animate-spin" />}
+                          <span>{user.isBanned ? "Unban" : "Suspend"}</span>
+                        </button>
+                      );
+                    })()}
                   </td>
                 </tr>
               );

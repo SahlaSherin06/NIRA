@@ -19,7 +19,8 @@ interface AdminUserProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
   onToggleBan: (id: string) => void;
-  isBanPending: boolean;
+  isBanPending?: boolean;
+  pendingUserId?: string;
 }
 
 export function AdminUserProfileModal({
@@ -27,9 +28,11 @@ export function AdminUserProfileModal({
   isOpen,
   onClose,
   onToggleBan,
-  isBanPending,
+  isBanPending = false,
+  pendingUserId,
 }: AdminUserProfileModalProps) {
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+  const isThisPending = isBanPending || (pendingUserId !== undefined && pendingUserId === user?._id);
 
   if (!isOpen || !user) return null;
 
@@ -351,14 +354,14 @@ export function AdminUserProfileModal({
             {/* Toggle Ban */}
             <button
               onClick={() => onToggleBan(user._id)}
-              disabled={isBanPending}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 shadow-2xs ${
+              disabled={isThisPending}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 shadow-2xs active:scale-95 disabled:opacity-60 cursor-pointer ${
                 user.isBanned
                   ? "bg-emerald-600 hover:bg-emerald-700 text-white"
                   : "bg-red-600 hover:bg-red-700 text-white"
               }`}
             >
-              {isBanPending ? (
+              {isThisPending ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
               ) : (
                 <Ban className="w-3.5 h-3.5" />

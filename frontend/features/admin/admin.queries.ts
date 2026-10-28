@@ -3,7 +3,6 @@ import {
   getAdminStatsApi,
   getAdminUsersApi,
   toggleBanUserApi,
-  togglePremiumUserApi,
   getAdminReportsApi,
   warnReportUserApi,
   dismissAdminReportApi,
@@ -85,17 +84,49 @@ export const useToggleBanUser = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => toggleBanUserApi(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminKeys.all });
-    },
-  });
-};
+    onMutate: async (id: string) => {
+      // 1. Cancel any active refetches so they don't overwrite the optimistic state
+      await queryClient.cancelQueries({ queryKey: ["admin", "users"] });
 
-export const useTogglePremiumUser = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => togglePremiumUserApi(id),
-    onSuccess: () => {
+      // 2. Snapshot previous query data for all users lists
+      const previousUsersQueries = queryClient.getQueriesData({ queryKey: ["admin", "users"] });
+
+      // 3. Optimistically flip isBanned state in all cached user query pages
+      queryClient.setQueriesData({ queryKey: ["admin", "users"] }, (oldData: any) => {
+        if (!oldData || !oldData.users) return oldData;
+        const targetUser = oldData.users.find((u: any) => u._id === id);
+        if (!targetUser) return oldData;
+
+        const willBeBanned = !targetUser.isBanned;
+
+        return {
+          ...oldData,
+          users: oldData.users.map((u: any) =>
+            u._id === id ? { ...u, isBanned: willBeBanned } : u
+          ),
+          metrics: oldData.metrics
+            ? {
+                ...oldData.metrics,
+                banned: willBeBanned
+                  ? oldData.metrics.banned + 1
+                  : Math.max(0, oldData.metrics.banned - 1),
+              }
+            : oldData.metrics,
+        };
+      });
+
+      return { previousUsersQueries };
+    },
+    onError: (_err, _id, context: any) => {
+      // Rollback to previous snapshot if network request failed
+      if (context?.previousUsersQueries) {
+        context.previousUsersQueries.forEach(([queryKey, data]: any) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+    },
+    onSettled: () => {
+      // Background sync across admin portal
       queryClient.invalidateQueries({ queryKey: adminKeys.all });
     },
   });

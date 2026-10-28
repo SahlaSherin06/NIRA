@@ -166,11 +166,6 @@ export const toggleBanUserApi = async (id: string): Promise<{ message: string; i
   return res.data;
 };
 
-export const togglePremiumUserApi = async (id: string): Promise<{ message: string; plan: string }> => {
-  const res = await api.patch(`/admin/users/${id}/premium`);
-  return res.data;
-};
-
 export const getAdminReportsApi = async (params?: {
   search?: string;
   status?: string;

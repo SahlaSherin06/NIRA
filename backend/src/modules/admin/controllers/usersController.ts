@@ -91,66 +91,36 @@ export const getAdminUsers = asyncHandler(async (req: Request, res: Response, ne
  * Ban or unban a user
  */
 export const toggleBanUser = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-  const { id } = req.params;
-  const user = await User.findById(id);
+  const id = req.params.id as string;
+  if (!id) {
+    res.status(400).json({ message: "User ID is required" });
+    return;
+  }
+
+  const user = await User.findById(id).select("_id isBanned").lean();
 
   if (!user) {
     res.status(404).json({ message: "User not found" });
     return;
   }
 
-  user.isBanned = !user.isBanned;
-  await user.save();
+  const newBannedState = !user.isBanned;
+  await User.findByIdAndUpdate(id, { $set: { isBanned: newBannedState } });
 
   // If user was suspended, immediately emit real-time event and force-disconnect their active sockets
-  if (user.isBanned) {
+  if (newBannedState) {
     const io = (req as any).io;
     if (io) {
-      io.to(user._id.toString()).emit("accountSuspended", {
+      io.to(id).emit("accountSuspended", {
         message: "Your account has been suspended by the administrator due to policy violations.",
         isBanned: true,
       });
-      io.in(user._id.toString()).disconnectSockets(true);
+      io.in(id).disconnectSockets(true);
     }
   }
 
   res.status(200).json({
-    message: user.isBanned ? "User suspended successfully" : "User unbanned successfully",
-    isBanned: user.isBanned,
-  });
-});
-
-/**
- * PATCH /api/admin/users/:id/premium
- * Grant or revoke premium
- */
-export const togglePremiumUser = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-  const { id } = req.params;
-  const user = await User.findById(id);
-
-  if (!user) {
-    res.status(404).json({ message: "User not found" });
-    return;
-  }
-
-  const currentPlan = user.subscription?.plan;
-  const newPlan = currentPlan === "premium" ? "free" : "premium";
-
-  if (newPlan === "premium") {
-    user.subscription = {
-      plan: "premium",
-      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-    };
-  } else {
-    user.subscription = {
-      plan: "free",
-    };
-  }
-
-  await user.save();
-
-  res.status(200).json({
-    message: `User plan changed to ${newPlan}`,
-    plan: newPlan,
+    message: newBannedState ? "User suspended successfully" : "User unbanned successfully",
+    isBanned: newBannedState,
   });
 });

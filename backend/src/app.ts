@@ -20,7 +20,7 @@ const app = express();
 // Needed because the backend sits behind a proxy/tunnel (HTTPS) - required for secure cookies
 app.set("trust proxy", 1);
 
-// Allowed frontend origins (no trailing slash)
+// Allowed frontend origins 
 const allowedOrigins = [
   "http://localhost:3000",
   "http://127.0.0.1:3000",

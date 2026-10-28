@@ -21,11 +21,16 @@ export function AdminUsersView() {
 
   const { data, isLoading } = useAdminUsers({ page, search, filter, gender });
   const toggleBan = useToggleBanUser();
+  const pendingUserId = toggleBan.isPending ? (toggleBan.variables as string) : undefined;
 
-  // Keep modal user data in sync when toggled
+  // Optimistically toggle ban state in modal and table instantly
   const handleToggleBan = (id: string) => {
+    if (selectedUser && selectedUser._id === id) {
+      setSelectedUser((prev) => (prev ? { ...prev, isBanned: !prev.isBanned } : null));
+    }
     toggleBan.mutate(id, {
-      onSuccess: () => {
+      onError: () => {
+        // Revert modal state if network call fails
         if (selectedUser && selectedUser._id === id) {
           setSelectedUser((prev) => (prev ? { ...prev, isBanned: !prev.isBanned } : null));
         }
@@ -78,7 +83,7 @@ export function AdminUsersView() {
         isLoading={isLoading}
         onViewProfile={(u) => setSelectedUser(u)}
         onToggleBan={handleToggleBan}
-        isBanPending={toggleBan.isPending}
+        pendingUserId={pendingUserId}
       />
 
       {/* 5. Pagination Controls */}
@@ -128,7 +133,7 @@ export function AdminUsersView() {
         isOpen={!!selectedUser}
         onClose={() => setSelectedUser(null)}
         onToggleBan={handleToggleBan}
-        isBanPending={toggleBan.isPending}
+        pendingUserId={pendingUserId}
       />
     </div>
   );

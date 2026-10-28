@@ -33,7 +33,6 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       const socket = getSocket();
 
       const handleAdminNotification = () => {
-        // Automatically refetch notifications and platform stats in real-time
         queryClient.invalidateQueries({ queryKey: adminKeys.all });
       };
 

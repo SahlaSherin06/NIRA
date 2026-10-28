@@ -7,7 +7,6 @@ import { getAdminStats } from "../controllers/dashboardController";
 import {
   getAdminUsers,
   toggleBanUser,
-  togglePremiumUser,
 } from "../controllers/usersController";
 import {
   getAdminReports,
@@ -42,7 +41,6 @@ router.get("/stats", getAdminStats);
 // 2. Member Management
 router.get("/users", getAdminUsers);
 router.patch("/users/:id/ban", toggleBanUser);
-router.patch("/users/:id/premium", togglePremiumUser);
 
 // 3. Safety, Moderation & Reports
 router.get("/reports", getAdminReports);
